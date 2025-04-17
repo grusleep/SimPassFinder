@@ -1,5 +1,5 @@
 # Folders
-dataset/
+/dataset/**
 !/dataset/dataset.txt
 .vscode/
 __pycache__/
