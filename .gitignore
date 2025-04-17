@@ -1,8 +1,10 @@
 # Folders
-dataset/*
+dataset/
+!/dataset/dataset.txt
 .vscode/
 __pycache__/
 
 
 # Files
 test.py
+*.tar.gz
