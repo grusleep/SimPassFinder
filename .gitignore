@@ -1,3 +1,8 @@
+# Folders
 dataset/*
 .vscode/
 __pycache__/
+
+
+# Files
+test.py
