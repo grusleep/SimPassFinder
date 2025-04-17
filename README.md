@@ -1,4 +1,4 @@
-# FindPass
+# SimPassFinder
 
 ## 1 Environment
 version
