@@ -1,6 +1,6 @@
 # SimPassFinder
 
-## 1 Environment
+## 1. Environment
 version
 - python:3.10
 - cuda: 12.4
