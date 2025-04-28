@@ -5,15 +5,19 @@ import jellyfish
 from tqdm import tqdm
 import torch
 from torch.nn.utils.rnn import pad_sequence
+from sklearn.model_selection import train_test_split
 
 from .utils import *
 
 
 
 class CustomDataset():
-    def __init__(self, config):
-        self.dataset_path = config.dataset_path
-        self.edge_thv = config.edge_thv
+    def __init__(self, args):
+        self.dataset_path = args.dataset_path
+        self.edge_thv = args.edge_thv
+        self.graph_type = args.setting
+        self.valid = args.valid
+        self.test = args.test
         self.load_category()
         self.load_country()
         self.load_node()
@@ -186,3 +190,42 @@ class CustomDataset():
         self.graph.edata["label"][sim_etype][eid_rev] = torch.tensor(label_list, dtype=torch.float)
         
         print(f"[+] Done building graph\n")
+        
+        
+    def print_graph(self):
+        pass
+    
+    
+    def inductive_split(self):
+        print('[*] Splitting graph...')
+        
+        valid_portion, test_portion = self.args.valid, self.args.test
+
+        p1 = valid_portion + test_portion
+        p2 = test_portion / (valid_portion + test_portion)
+
+        train_node, valid_node = train_test_split(self.g.nodes(), test_size=p1, shuffle=True, random_state=self.args.random_seed)
+        valid_node, test_node = train_test_split(valid_node, test_size=p2, shuffle=True, random_state=self.args.random_seed)
+
+        train_g = self.graph.subgraph(train_node)
+        valid_g = self.graph.subgraph(torch.cat([train_node, valid_node], 0))
+        test_g = self.graph.subgraph(torch.cat([train_node, test_node], 0))
+        
+        print('[+] Splitting graph... Done')
+
+        return {'train': train_g, 'valid': valid_g, 'test': test_g}, {'train': train_node, 'valid': valid_node, 'test': test_node}
+
+
+    def transductive_split(self):
+        print('[*] Splitting graph...')
+        
+        valid_portion, test_portion = self.args.valid, self.args.test
+
+        p1 = valid_portion + test_portion
+        p2 = test_portion / (valid_portion + test_portion)
+
+        train_edge, valid_edge = train_test_split(self.g.edges(etype='reuse', form='eid'), test_size=p1, shuffle=True, random_state=self.args.random_seed)
+        valid_edge, test_edge = train_test_split(valid_edge, test_size=p2, shuffle=True, random_state=self.args.random_seed)
+        
+        print('[+] Splitting graph... Done')
+        return {'train': train_edge, 'valid': valid_edge, 'test': test_edge}, {'train': train_edge, 'valid': valid_edge, 'test': test_edge}
