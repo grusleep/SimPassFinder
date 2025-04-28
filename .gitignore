@@ -8,3 +8,4 @@ __pycache__/
 # Files
 test.py
 *.tar.gz
+*.tgz
