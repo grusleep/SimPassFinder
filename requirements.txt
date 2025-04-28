@@ -1,5 +1,4 @@
---find-links https://data.dgl.ai/wheels/torch-2.4/cu124/repo.html
 rarfile
 tqdm
-dgl-cu124
 torch==2.4
+scikit-learn
