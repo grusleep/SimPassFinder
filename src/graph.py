@@ -12,14 +12,15 @@ from .utils import *
 
 
 class CustomDataset():
-    def __init__(self, args):
+    def __init__(self, args, device):
         self.dataset_path = args.dataset_path
         self.edge_thv = args.edge_thv
         self.splitting_type = args.setting
         self.valid = args.valid
         self.test = args.test
         self.gnn_depth = args.gnn_depth
-        self.device = args.device
+        self.device = device
+        self.random_seed = args.random_seed
         self.batch_size = args.batch_size
         self.load_category()
         self.load_country()
@@ -196,22 +197,22 @@ class CustomDataset():
         
         
     def print_graph(self, print_type="all"):
-        print(f"[*] Graph information")
+        print(f"[+] Graph information")
         if print_type == "all":
-            print(f"[*] Nodes: {self.graph.num_nodes()}")
-            print(f"[*] Edges: {self.graph.num_edges()}")
+            print(f"[+] Nodes: {self.graph.num_nodes()}")
+            print(f"[+] Edges: {self.graph.num_edges()}")
         elif print_type == "split": 
             if self.splitting_type == "inductive":
-                print(f"[*] Graph type: Inductive")
-                print(f"[*] Train| graph: {len(self.graph_split['train'])}, nodes: {self.graph_split['train'].num_nodes()}, edges: {self.graph_split['train'].num_edges()}")
-                print(f"[*] Valid| graph: {len(self.graph_split['valid'])}, nodes: {self.graph_split['valid'].num_nodes()}, edges: {self.graph_split['valid'].num_edges()}")
-                print(f"[*] Test | graph: {len(self.graph_split['test'])}, nodes: {self.graph_split['test'].num_nodes()}, edges: {self.graph_split['test'].num_edges()}")
+                print(f"[+] Graph type: Inductive")
+                print(f"[+] Train| nodes: {self.graph_split['train'].num_nodes()}, edges: {self.graph_split['train'].num_edges()}")
+                print(f"[+] Valid| nodes: {self.graph_split['valid'].num_nodes()}, edges: {self.graph_split['valid'].num_edges()}")
+                print(f"[+] Test | nodes: {self.graph_split['test'].num_nodes()}, edges: {self.graph_split['test'].num_edges()}")
             else:
-                print(f"[*] Graph type: Transductive")
-                print(f"[*] All nodes: {self.graph.num_nodes()}")
-                print(f"[*] Train edges: {self.edge_split['train']}")
-                print(f"[*] Valid edges: {self.edge_split['valid']}")
-                print(f"[*] Test edges: {self.edge_split['test']}")
+                print(f"[+] Graph type: Transductive")
+                print(f"[+] All nodes: {self.graph.num_nodes()}")
+                print(f"[+] Train| edges: {self.edge_split['train']}")
+                print(f"[+] Valid| edges: {self.edge_split['valid']}")
+                print(f"[+] Test | edges: {self.edge_split['test']}")
         print("")
     
     
@@ -221,8 +222,8 @@ class CustomDataset():
         p1 = valid_portion + test_portion
         p2 = test_portion / (valid_portion + test_portion)
 
-        train_node, valid_node = train_test_split(self.graph.nodes(), test_size=p1, shuffle=True, random_state=self.args.random_seed)
-        valid_node, test_node = train_test_split(valid_node, test_size=p2, shuffle=True, random_state=self.args.random_seed)
+        train_node, valid_node = train_test_split(self.graph.nodes(), test_size=p1, shuffle=True, random_state=self.random_seed)
+        valid_node, test_node = train_test_split(valid_node, test_size=p2, shuffle=True, random_state=self.random_seed)
 
         train_g = self.graph.subgraph(train_node)
         valid_g = self.graph.subgraph(torch.cat([train_node, valid_node], 0))
@@ -252,7 +253,7 @@ class CustomDataset():
             self.edge_split = self.transductive_split()
         print(f"[+] Done splitting graph\n")
         
-        self.print_graph()
+        self.print_graph(print_type="split")
         
         
     def get_dataset_loader(self, data_type):
