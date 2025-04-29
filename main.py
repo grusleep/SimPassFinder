@@ -50,6 +50,7 @@ def init_dataset(args):
     graph.load_edge()
     graph.encoding_node()
     graph.build_graph()
+    graph.split()
     
     return graph
         

@@ -15,7 +15,7 @@ class CustomDataset():
     def __init__(self, args):
         self.dataset_path = args.dataset_path
         self.edge_thv = args.edge_thv
-        self.graph_type = args.setting
+        self.splitting_type = args.setting
         self.valid = args.valid
         self.test = args.test
         self.load_category()
@@ -192,40 +192,60 @@ class CustomDataset():
         print(f"[+] Done building graph\n")
         
         
-    def print_graph(self):
-        pass
-    
+    def print_graph(self, print_type="all"):
+        print(f"[*] Graph information")
+        if print_type == "all":
+            print(f"[*] Nodes: {self.graph.num_nodes()}")
+            print(f"[*] Edges: {self.graph.num_edges()}")
+        elif print_type == "split": 
+            if self.splitting_type == "inductive":
+                print(f"[*] Graph type: Inductive")
+                print(f"[*] Train| graph: {len(self.graph_split['train'])}, nodes: {self.graph_split['train'].num_nodes()}, edges: {self.graph_split['train'].num_edges()}")
+                print(f"[*] Valid| graph: {len(self.graph_split['valid'])}, nodes: {self.graph_split['valid'].num_nodes()}, edges: {self.graph_split['valid'].num_edges()}")
+                print(f"[*] Test | graph: {len(self.graph_split['test'])}, nodes: {self.graph_split['test'].num_nodes()}, edges: {self.graph_split['test'].num_edges()}")
+            else:
+                print(f"[*] Graph type: Transductive")
+                print(f"[*] All nodes: {self.graph.num_nodes()}")
+                print(f"[*] Train edges: {self.edge_split['train']}")
+                print(f"[*] Valid edges: {self.edge_split['valid']}")
+                print(f"[*] Test edges: {self.edge_split['test']}")
+        print("")
     
     def inductive_split(self):
-        print('[*] Splitting graph...')
-        
-        valid_portion, test_portion = self.args.valid, self.args.test
+        valid_portion, test_portion = self.valid, self.test
 
         p1 = valid_portion + test_portion
         p2 = test_portion / (valid_portion + test_portion)
 
-        train_node, valid_node = train_test_split(self.g.nodes(), test_size=p1, shuffle=True, random_state=self.args.random_seed)
+        train_node, valid_node = train_test_split(self.graph.nodes(), test_size=p1, shuffle=True, random_state=self.args.random_seed)
         valid_node, test_node = train_test_split(valid_node, test_size=p2, shuffle=True, random_state=self.args.random_seed)
 
         train_g = self.graph.subgraph(train_node)
         valid_g = self.graph.subgraph(torch.cat([train_node, valid_node], 0))
         test_g = self.graph.subgraph(torch.cat([train_node, test_node], 0))
-        
-        print('[+] Splitting graph... Done')
 
         return {'train': train_g, 'valid': valid_g, 'test': test_g}, {'train': train_node, 'valid': valid_node, 'test': test_node}
 
 
     def transductive_split(self):
-        print('[*] Splitting graph...')
-        
         valid_portion, test_portion = self.args.valid, self.args.test
 
         p1 = valid_portion + test_portion
         p2 = test_portion / (valid_portion + test_portion)
 
-        train_edge, valid_edge = train_test_split(self.g.edges(etype='reuse', form='eid'), test_size=p1, shuffle=True, random_state=self.args.random_seed)
+        train_edge, valid_edge = train_test_split(self.graph.edges(etype='reuse', form='eid'), test_size=p1, shuffle=True, random_state=self.args.random_seed)
         valid_edge, test_edge = train_test_split(valid_edge, test_size=p2, shuffle=True, random_state=self.args.random_seed)
         
-        print('[+] Splitting graph... Done')
         return {'train': train_edge, 'valid': valid_edge, 'test': test_edge}, {'train': train_edge, 'valid': valid_edge, 'test': test_edge}
+    
+    
+    def split(self):
+        print(f"[*] Start splitting graph")
+        print(f"[*] Splitting type: {self.splitting_type}")
+        if self.splitting_type == "inductive":
+            self.graph_split, self.node_split = self.inductive_split()
+        else:
+            self.edge_split = self.transductive_split()
+        print(f"[+] Done splitting graph\n")
+        
+        self.print_graph()
