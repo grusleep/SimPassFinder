@@ -1,5 +1,5 @@
 import re
-import jellyfish
+import torch
 
 
 
@@ -16,12 +16,13 @@ def check_pwd_security_level(pwd: list):
     if re.search(r'[!@#$%^&*(),.?":{}|<>]', pwd):
         level += 1
     return level
-    
 
 
-if __name__ == "__main__":
-    pwd1 = "test_1234!"
-    pwd2 = "test_7234!"
-    
-    print(f"({pwd1}, {pwd2}): {jellyfish.jaro_similarity(pwd1, pwd2)}")
-    
+def save_checkpoint(path, model, optimizer, valid_result):
+    if path == None:
+        return
+    torch.save({
+        'model_state_dict': model.state_dict(),
+        'optimizer_state_dict': optimizer.state_dict(),
+        'valid_result': valid_result
+    }, path)
