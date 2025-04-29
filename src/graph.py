@@ -18,6 +18,9 @@ class CustomDataset():
         self.splitting_type = args.setting
         self.valid = args.valid
         self.test = args.test
+        self.gnn_depth = args.gnn_depth
+        self.device = args.device
+        self.batch_size = args.batch_size
         self.load_category()
         self.load_country()
         self.load_node()
@@ -249,3 +252,49 @@ class CustomDataset():
         print(f"[+] Done splitting graph\n")
         
         self.print_graph()
+        
+        
+    def get_dataset_loader(self, data_type):
+        print(f"[*] Start getting dataset loader for {data_type}")
+        if self.splitting_type == "inductive":
+            graph = self.graph_split[data_type]
+        else:
+            graph = self.graph
+        
+        reverse_eid = self.get_reverse_eid(data_type)
+        target_eid = self.get_target_eid(data_type)
+        
+        sampler = dgl.dataloading.as_edge_prediction_sampler(dgl.dataloading.MultiLayerFullNeighborSampler(self.gnn_depth), exclude='reverse_id', reverse_eids=reverse_eid)
+        
+        data_loader = dgl.dataloading.DataLoader(
+                graph,
+                {'reuse': target_eid},
+                sampler,
+                batch_size=self.batch_size,
+                device=self.device,
+                shuffle=False,
+                drop_last=False,
+                num_workers=0)
+
+        return data_loader
+    
+    
+    def get_reverse_eid(self, g_type):
+        if self.splitting_type == 'transductive':
+            g = self.graph
+        else:
+            g = self.graph_split[g_type]
+        return {('site', 'sim', 'site'): g.edge_ids(g.edges(etype='sim')[1], g.edges(etype='sim')[0], etype='sim')}
+    
+    
+    def get_target_eid(self, g_type):
+        if self.splitting_type == 'transductive':
+            return self.edge_split[g_type]
+        else:
+            g = self.graph_split[g_type]
+            node = self.node_split[g_type]
+
+            ori_id_to_id = dict(zip(g.ndata['_ID'].tolist(), g.nodes().tolist()))
+            node_sub = [ori_id_to_id[n.item()] for n in node]
+
+            return torch.unique(torch.cat([g.in_edges(node_sub, etype='sim', form='eid'), g.out_edges(node_sub, etype='sim', form='eid')]))
