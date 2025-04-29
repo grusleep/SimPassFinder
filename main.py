@@ -1,13 +1,15 @@
-from src import *
 import argparse
+import shutil
 from pprint import pprint
 
-dataset_path = "dataset"
+from src import *
+
+TOTAL_WIDTH = 50
 
 
 
 def init():
-    print("="*10+"Initializing"+"="*10)
+    print("Initializing".center(TOTAL_WIDTH, "="))
     parser = argparse.ArgumentParser(description="Parser for model configuration")
 
     parser.add_argument('--dataset_path', type=str, required=True, help='dataset_path')
@@ -45,7 +47,7 @@ def init():
 
 
 def init_dataset(args, device):
-    print("="*10+"Initializing Dataset"+"="*10)
+    print("Initializing Dataset".center(TOTAL_WIDTH, "="))
     graph = CustomDataset(args, device)
     graph.load_node()
     graph.load_edge()
@@ -57,11 +59,18 @@ def init_dataset(args, device):
 
 
 def train(args, device, dataset):
-    print("="*10+"Train"+"="*10)
+    print("Training".center(TOTAL_WIDTH, "="))
+    print(f"[*] Initializing save path")
+    path = os.path.join(args.model_path, args.model_name)
+    if os.path.exists(path):
+        shutil.rmtree(path)
+    os.makedirs(path)
+
+    
     print(f"[*] Getting dataset loader")
-    train_loader = dataset.get_train_loader("train")
-    valid_loader = dataset.get_valid_loader("valid")
-    test_loader = dataset.get_test_loader("test")
+    train_loader = dataset.get_dataset_loader("train")
+    valid_loader = dataset.get_dataset_loader("valid")
+    test_loader = dataset.get_dataset_loader("test")
     
     train_nfeat = dataset.pop_node_feature("train")
     valid_nfeat = dataset.pop_node_feature("valid")
@@ -72,57 +81,77 @@ def train(args, device, dataset):
     optimizer = torch.optim.Adam(model.parameters(), lr=float(args.max_lr))
     loss_fn = torch.nn.BCELoss()
     
+    print(f"[*] Training model")
     train_loss_list = []
     valid_loss_list = []
     f1_list = []
     result_list = []
     not_improved = 0
     
-    print(f"[*] Training model")
     model.train()
-    for epoch in range(args.max_epoch):
-        train_loss = 0
-        for batch in train_loader:
+    for epoch in range(1, args.max_epoch+1):
+        train_loss = 0.0
+        for input_nodes, edge_sub, blocks in train_loader:
             optimizer.zero_grad()
-            batch = batch.to(device)
-            pred = model(batch, train_nfeat)
-            loss = loss_fn(pred, batch.y.float())
+            batch_inputs, batch_labels = load_subtensor(*train_nfeat, edge_sub, input_nodes, device)
+            blocks = [block.int().to(device) for block in blocks]
+            output, attn = model(edge_sub, blocks, *batch_inputs)
+            probs = torch.sigmoid(output)  # [batch_size, 2]
+        
+            batch_labels = torch.nn.functional.one_hot(batch_labels, num_classes=2).float()
+            loss = loss_fn(probs.float(), batch_labels.float())
+            
             loss.backward()
             optimizer.step()
-            train_loss += loss.item()
-        
-        train_loss /= len(train_loader)
+
+            total_loss += loss.item()
+        train_loss = total_loss / len(train_loader)
         train_loss_list.append(train_loss)
         
-        valid_loss = 0
-        model.eval()
-        with torch.no_grad():
-            for batch in valid_loader:
-                batch = batch.to(device)
-                pred = model(batch, valid_nfeat)
-                loss = loss_fn(pred, batch.y.float())
-                valid_loss += loss.item()
+        total_loss = 0.0
+        for input_nodes, edge_sub, blocks in valid_loader:
+            optimizer.zero_grad()
+            batch_inputs, batch_labels = load_subtensor(*valid_nfeat, edge_sub, input_nodes, device)
+            blocks = [block.int().to(device) for block in blocks]
+            output, attn = model(edge_sub, blocks, *batch_inputs)
+            probs = torch.sigmoid(output)  # [batch_size, 2]
         
-        valid_loss /= len(valid_loader)
+            batch_labels = torch.nn.functional.one_hot(batch_labels, num_classes=2).float()
+            loss = loss_fn(probs.float(), batch_labels.float())
+            
+            loss.backward()
+            optimizer.step()
+
+            total_loss += loss.item()    
+        valid_loss = total_loss / len(valid_loader)
         valid_loss_list.append(valid_loss)
         
-        f1_score = evaluate(model, test_loader, test_nfeat, device)
+        valid_result = evaluate(model, valid_loader, valid_nfeat, device)
+        result_list.append(valid_result)
+        f1_score = valid_result['macro avg']['f1-score']
         f1_list.append(f1_score)
         
-        print(f"Epoch {epoch+1}/{args.max_epoch}, Train Loss: {train_loss:.4f}, Valid Loss: {valid_loss:.4f}, F1 Score: {f1_score:.4f}")
+        if epoch%10 == 0:
+            print(f"[*] Epoch {epoch:4d} | Train Loss: {train_loss:.4f} | Valid Loss: {valid_loss:.4f} | f1-score: {f1_score:.4f} | Best f1-score: {max(f1_list):.4f}")
         
-        if epoch > 0 and valid_loss > min(valid_loss_list[:-1]):
-            not_improved += 1
-            if not_improved >= args.early_stop:
-                print("Early stopping")
-                break
-        else:
+        path = os.path.join(args.model_path, args.model_name, f"model_{epoch}.pth")
+        save_checkpoint(path, model, optimizer, valid_result)
+        if f1_score >= max(f1_list):
+            path = os.path.join(args.model_path, args.model_name, "model_best.pth")
+            save_checkpoint(path, model, optimizer, valid_result)
+            
+        if valid_loss <= min(valid_loss_list):
             not_improved = 0
-    
-    
+        else:
+            not_improved += 1
+        if not_improved >= args.early_stop:
+            print(f"[*] Early stopping at epoch {epoch}")
+            break
+    print(f"[+] Done training\n\n")
         
         
         
 if __name__ == "__main__":
     args, device = init()
     dataset = init_dataset(args, device)
+    train(args, device, dataset)
