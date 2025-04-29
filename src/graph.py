@@ -279,22 +279,22 @@ class CustomDataset():
         return data_loader
     
     
-    def get_reverse_eid(self, g_type):
+    def get_reverse_eid(self, data_type):
         if self.splitting_type == 'transductive':
-            g = self.graph
+            graph = self.graph
         else:
-            g = self.graph_split[g_type]
-        return {('site', 'sim', 'site'): g.edge_ids(g.edges(etype='sim')[1], g.edges(etype='sim')[0], etype='sim')}
+            graph = self.graph_split[data_type]
+        return {('site', 'sim', 'site'): graph.edge_ids(graph.edges(etype='sim')[1], graph.edges(etype='sim')[0], etype='sim')}
     
     
-    def get_target_eid(self, g_type):
+    def get_target_eid(self, data_type):
         if self.splitting_type == 'transductive':
-            return self.edge_split[g_type]
+            return self.edge_split[data_type]
         else:
-            g = self.graph_split[g_type]
-            node = self.node_split[g_type]
+            graph = self.graph_split[data_type]
+            node = self.node_split[data_type]
 
-            ori_id_to_id = dict(zip(g.ndata['_ID'].tolist(), g.nodes().tolist()))
+            ori_id_to_id = dict(zip(graph.ndata['_ID'].tolist(), graph.nodes().tolist()))
             node_sub = [ori_id_to_id[n.item()] for n in node]
 
-            return torch.unique(torch.cat([g.in_edges(node_sub, etype='sim', form='eid'), g.out_edges(node_sub, etype='sim', form='eid')]))
+            return torch.unique(torch.cat([graph.in_edges(node_sub, etype='sim', form='eid'), graph.out_edges(node_sub, etype='sim', form='eid')]))
