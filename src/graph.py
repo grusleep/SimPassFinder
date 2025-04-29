@@ -214,6 +214,7 @@ class CustomDataset():
                 print(f"[*] Test edges: {self.edge_split['test']}")
         print("")
     
+    
     def inductive_split(self):
         valid_portion, test_portion = self.valid, self.test
 
@@ -298,3 +299,19 @@ class CustomDataset():
             node_sub = [ori_id_to_id[n.item()] for n in node]
 
             return torch.unique(torch.cat([graph.in_edges(node_sub, etype='sim', form='eid'), graph.out_edges(node_sub, etype='sim', form='eid')]))
+        
+        
+    def pop_node_feature(self, data_type):
+        if self.splitting_type == 'transductive':
+            graph = self.graph
+        else:
+            graph = self.graph_split[data_type]
+            
+        nfeat_s = graph.ndata.pop('site')
+        nfeat_sm = graph.ndata.pop('site_mask')
+        nfeat_c = graph.ndata.pop('category')
+        nfeat_co = graph.ndata.pop('country')
+        nfeat_sl = graph.ndata.pop('security_level')
+        nfeat_ip = graph.ndata.pop('ip')
+        
+        return nfeat_s, nfeat_sm, nfeat_c, nfeat_co, nfeat_sl, nfeat_ip
