@@ -2,7 +2,6 @@ import os
 import dgl
 import json
 import jellyfish
-from tqdm import tqdm
 import torch
 from torch.nn.utils.rnn import pad_sequence
 from sklearn.model_selection import train_test_split
@@ -238,7 +237,7 @@ class CustomDataset():
         p1 = valid_portion + test_portion
         p2 = test_portion / (valid_portion + test_portion)
 
-        train_edge, valid_edge = train_test_split(self.graph.edges(etype='reuse', form='eid'), test_size=p1, shuffle=True, random_state=self.args.random_seed)
+        train_edge, valid_edge = train_test_split(self.graph.edges(etype='sim', form='eid'), test_size=p1, shuffle=True, random_state=self.args.random_seed)
         valid_edge, test_edge = train_test_split(valid_edge, test_size=p2, shuffle=True, random_state=self.args.random_seed)
         
         return {'train': train_edge, 'valid': valid_edge, 'test': test_edge}, {'train': train_edge, 'valid': valid_edge, 'test': test_edge}
@@ -270,7 +269,7 @@ class CustomDataset():
         
         data_loader = dgl.dataloading.DataLoader(
                 graph,
-                {'reuse': target_eid},
+                {'sim': target_eid},
                 sampler,
                 batch_size=self.batch_size,
                 device=self.device,

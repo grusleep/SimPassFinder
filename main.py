@@ -23,7 +23,6 @@ def init():
     parser.add_argument('--dropout', type=float, default=0.5, help='dropout ratio')
     parser.add_argument('--random_seed', type=int, default=1, help='random seed for initialization')
     parser.add_argument('--relu', type=float, default=0.2, help='ReLU threshold')
-    parser.add_argument('--reuse_th', type=float, default=0.5, help='threshold for reuse')
     parser.add_argument('--batch_size', type=int, default=65536, help='batch size for training')
     parser.add_argument('--embed_size', type=int, default=256, help='size of the embedding layer')
     parser.add_argument('--hidden_size', type=int, default=256, help='size of the hidden layer')
@@ -39,7 +38,6 @@ def init():
     pprint(vars(args))
 
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    device = torch.device('cpu')
     print(f'[+] device: {device}')
     print("\n")
     return args, device
