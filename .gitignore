@@ -3,6 +3,7 @@
 !/dataset/dataset.txt
 .vscode/
 __pycache__/
+model/
 
 
 # Files
