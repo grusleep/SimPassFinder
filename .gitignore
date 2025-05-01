@@ -9,3 +9,4 @@ __pycache__/
 test.py
 *.tar.gz
 *.tgz
+error.log
