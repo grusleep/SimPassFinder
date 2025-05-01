@@ -1,1 +1,1 @@
-python3 main.py --dataset_path ./dataset --setting inductive 2> error.log
+python3 main.py --dataset_path ./dataset --setting inductive --model_name SPF_1 2> error.log
