@@ -88,7 +88,7 @@ def train(args, device, dataset):
     
     model.train()
     for epoch in range(1, args.max_epoch+1):
-        train_loss = 0.0
+        total_loss = 0.0
         for input_nodes, edge_sub, blocks in train_loader:
             optimizer.zero_grad()
             batch_inputs, batch_labels = load_subtensor(*train_nfeat, edge_sub, input_nodes, device)
@@ -96,7 +96,7 @@ def train(args, device, dataset):
             output, attn = model(edge_sub, blocks, *batch_inputs)
             probs = torch.sigmoid(output)  # [batch_size, 2]
         
-            batch_labels = torch.nn.functional.one_hot(batch_labels, num_classes=2).float()
+            batch_labels = torch.nn.functional.one_hot(batch_labels.long(), num_classes=2).float()
             loss = loss_fn(probs.float(), batch_labels.float())
             
             loss.backward()
@@ -114,7 +114,7 @@ def train(args, device, dataset):
             output, attn = model(edge_sub, blocks, *batch_inputs)
             probs = torch.sigmoid(output)  # [batch_size, 2]
         
-            batch_labels = torch.nn.functional.one_hot(batch_labels, num_classes=2).float()
+            batch_labels = torch.nn.functional.one_hot(batch_labels.long(), num_classes=2).float()
             loss = loss_fn(probs.float(), batch_labels.float())
             
             loss.backward()

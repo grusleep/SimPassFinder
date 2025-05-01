@@ -131,7 +131,7 @@ class CustomDataset():
         encode_node["country"] = self.countries.index(node["country"])
         encode_node["security_level"] = node["security_level"]
         bit_strs = [f"{int(octet):08b}" for octet in node["ip"].split(".")]
-        encode_node["ip"] = [int(bit)
+        encode_node["ip"] = [float(bit)
                             for byte in bit_strs
                             for bit in byte]
 

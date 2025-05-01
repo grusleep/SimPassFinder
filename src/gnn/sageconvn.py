@@ -62,17 +62,8 @@ class SAGEConvN(nn.Module):
             self.register_buffer('bias', None)
         self.reset_parameters()
 
+
     def reset_parameters(self):
-        r"""
-
-        Description
-        -----------
-        Reinitialize learnable parameters.
-
-        Note
-        ----
-        The linear weights :math:`W^{(l)}` are initialized using Glorot uniform initialization.
-        """
         gain = nn.init.calculate_gain('relu')
         if self._aggre_type != 'gcn':
             nn.init.xavier_uniform_(self.fc_self.weight, gain=gain)
@@ -89,8 +80,8 @@ class SAGEConvN(nn.Module):
             nn.init.xavier_uniform_(self.attn_r_r.weight, gain=gain)
         nn.init.xavier_uniform_(self.fc_neigh.weight, gain=gain)
 
+
     def _compatibility_check(self):
-        """Address the backward compatibility issue brought by #2747"""
         if not hasattr(self, 'bias'):
             dgl_warning("You are loading a GraphSAGE model trained from a old version of DGL, "
                         "DGL automatically convert it to be compatible with latest version.")
@@ -102,34 +93,8 @@ class SAGEConvN(nn.Module):
                     self.fc_self.bias = None
             self.bias = bias
 
+
     def forward(self, graph, feat, edge_weight=None):
-        r"""
-
-        Description
-        -----------
-        Compute GraphSAGE layer.
-
-        Parameters
-        ----------
-        graph : DGLGraph
-            The graph.
-        feat : torch.Tensor or pair of torch.Tensor
-            If a torch.Tensor is given, it represents the input feature of shape
-            :math:`(N, D_{in})`
-            where :math:`D_{in}` is size of input feature, :math:`N` is the number of nodes.
-            If a pair of torch.Tensor is given, the pair must contain two tensors of shape
-            :math:`(N_{in}, D_{in_{src}})` and :math:`(N_{out}, D_{in_{dst}})`.
-        edge_weight : torch.Tensor, optional
-            Optional tensor on the edge. If given, the convolution will weight
-            with regard to the message.
-
-        Returns
-        -------
-        torch.Tensor
-            The output feature of shape :math:`(N_{dst}, D_{out})`
-            where :math:`N_{dst}` is the number of destination nodes in the input graph,
-            :math:`D_{out}` is the size of the output feature.
-        """
         self._compatibility_check()
         with graph.local_scope():
             if isinstance(feat, tuple):
@@ -187,7 +152,7 @@ class SAGEConvN(nn.Module):
                 graph.apply_edges(fn.u_add_v('el_u', 'er_u', 'e_u'), etype='user')
                 graph.apply_edges(fn.u_add_v('el_r', 'er_r', 'e_r'), etype='sim')
                 e_u = self.leaky_relu(graph.edata.pop('e_u')[('site', 'user', 'site')])
-                e_r = self.leaky_relu(graph.edata.pop('e_r')[('site', 'site', 'site')])
+                e_r = self.leaky_relu(graph.edata.pop('e_r')[('site', 'sim', 'site')])
 
                 graph.edata['a_u'] = {('site', 'user', 'site'): edge_softmax(graph['user'], e_u)}
                 graph.edata['a_r'] = {('site', 'sim', 'site'): edge_softmax(graph['sim'], e_r)}
