@@ -1,6 +1,7 @@
 import re
+import sys
 import torch
-
+from tqdm import tqdm as _tqdm
 
 
 def check_pwd_security_level(pwd: list):
@@ -26,3 +27,7 @@ def save_checkpoint(path, model, optimizer, valid_result):
         'optimizer_state_dict': optimizer.state_dict(),
         'valid_result': valid_result
     }, path)
+
+
+def tqdm(*args, **kwargs):
+    return _tqdm(*args, file=sys.stdout, **kwargs)
