@@ -45,5 +45,5 @@ def evaluate(model, data_loader, nfeat, device='cpu'):
             y_true.extend(batch_labels.detach().cpu().long().numpy().tolist())
             y_pred.extend(score_list)
         
-    result = classification_report(y_true, y_pred, digits=4, output_dict=True)
+    result = classification_report(y_true, y_pred, digits=4, output_dict=True, zero_division=0)
     return result
