@@ -142,7 +142,7 @@ class SAGEConvN(nn.Module):
             msg_fn_ori = fn.copy_u('h', 'm')
             msg_fn = fn.copy_u('h', 'm')
             if edge_weight is not None:
-                assert edge_weight[('website', 'reuse', 'website')].shape[0] == graph.number_of_edges('reuse')
+                assert edge_weight[('site', 'sim', 'site')].shape[0] == graph.number_of_edges('site')
                 graph.edata['_edge_weight'] = edge_weight
                 msg_fn = fn.u_mul_e('h', '_edge_weight', 'm')
 
@@ -165,7 +165,7 @@ class SAGEConvN(nn.Module):
 
                 graph.multi_update_all(
                     {'user': (msg_fn_ori, fn.mean('m', 'neigh')),
-                     'reuse': (msg_fn_ori, fn.mean('m', 'neigh'))},
+                     'site': (msg_fn_ori, fn.mean('m', 'neigh'))},
                 concat)
                 h_neigh = graph.dstdata['neigh']
                 h_neigh = self.fc_neigh(h_neigh)
@@ -185,15 +185,15 @@ class SAGEConvN(nn.Module):
                 graph.dstdata.update({'er_u': er_u, 'er_r': er_r})
 
                 graph.apply_edges(fn.u_add_v('el_u', 'er_u', 'e_u'), etype='user')
-                graph.apply_edges(fn.u_add_v('el_r', 'er_r', 'e_r'), etype='reuse')
-                e_u = self.leaky_relu(graph.edata.pop('e_u')[('website', 'user', 'website')])
-                e_r = self.leaky_relu(graph.edata.pop('e_r')[('website', 'reuse', 'website')])
+                graph.apply_edges(fn.u_add_v('el_r', 'er_r', 'e_r'), etype='sim')
+                e_u = self.leaky_relu(graph.edata.pop('e_u')[('site', 'user', 'site')])
+                e_r = self.leaky_relu(graph.edata.pop('e_r')[('site', 'site', 'site')])
 
-                graph.edata['a_u'] = {('website', 'user', 'website'): edge_softmax(graph['user'], e_u)}
-                graph.edata['a_r'] = {('website', 'reuse', 'website'): edge_softmax(graph['reuse'], e_r)}
+                graph.edata['a_u'] = {('site', 'user', 'site'): edge_softmax(graph['user'], e_u)}
+                graph.edata['a_r'] = {('site', 'sim', 'site'): edge_softmax(graph['sim'], e_r)}
                 
                 graph.multi_update_all({'user': (fn.u_mul_e('ft_u', 'a_u', 'm_u'), fn.sum('m_u', 'neigh')),
-                                        'reuse': (fn.u_mul_e('ft_r', 'a_r', 'm_r'), fn.sum('m_r', 'neigh'))
+                                        'sim': (fn.u_mul_e('ft_r', 'a_r', 'm_r'), fn.sum('m_r', 'neigh'))
                                         },
                                         'mean')
                 h_neigh = graph.dstdata['neigh']
@@ -220,7 +220,7 @@ class SAGEConvN(nn.Module):
                 graph.srcdata['h'] = feat_src
 
                 graph.multi_update_all({'user': (fn.copy_src('h', 'm'), fn.mean('m', 'neigh')),
-                                        'reuse': (fn.copy_src('h', 'm'), fn.mean('m', 'neigh'))
+                                        'sim': (fn.copy_src('h', 'm'), fn.mean('m', 'neigh'))
                                         },
                                         'mean')
                 h_neigh = graph.dstdata['neigh']

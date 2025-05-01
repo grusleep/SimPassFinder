@@ -4,23 +4,26 @@ import torch
 from collections import defaultdict
 from sklearn.metrics import precision_score, recall_score, f1_score, classification_report
 
-def load_subtensor(nfeat_n, nfeat_c, nfeat_e, nfeat_ip, nfeat_text, edge_sub, input_nodes, device='cpu'):
-    nfeat_n = nfeat_n.to(device)
+def load_subtensor(nfeat_s, nfeat_sm, nfeat_c, nfeat_co, nfeat_sl, nfeat_ip, edge_sub, input_nodes, device='cpu'):
+    nfeat_s = nfeat_s.to(device)
+    nfeat_sm = nfeat_sm.to(device)
     nfeat_c = nfeat_c.to(device)
-    nfeat_e = nfeat_e.to(device)
+    nfeat_co = nfeat_co.to(device)
+    nfeat_sl = nfeat_sl.to(device)
     nfeat_ip = nfeat_ip.to(device)
-    nfeat_text = nfeat_text.to(device)
     input_nodes = input_nodes.to(device)
     
-    batch_inputs_n = nfeat_n[input_nodes].to(device)
-    batch_inputs_c = nfeat_c[input_nodes].to(device)
-    batch_inputs_e = nfeat_e[input_nodes].to(device)
-    batch_inputs_ip = nfeat_ip[input_nodes].to(device)
-    batch_inputs_text = nfeat_text[input_nodes].to(device)
-    edge_sub = edge_sub.to(device)
-    batch_labels = edge_sub.edata['label'][('website', 'reuse', 'website')]
     
-    return (batch_inputs_n, batch_inputs_c, batch_inputs_e, batch_inputs_ip, batch_inputs_text), batch_labels
+    batch_inputs_s = nfeat_s[input_nodes].to(device)
+    batch_inputs_sm = nfeat_sm[input_nodes].to(device)
+    batch_inputs_c = nfeat_c[input_nodes].to(device)
+    batch_inputs_co = nfeat_co[input_nodes].to(device)
+    batch_inputs_sl = nfeat_sl[input_nodes].to(device)
+    batch_inputs_ip = nfeat_ip[input_nodes].to(device)
+    edge_sub = edge_sub.to(device)
+    batch_labels = edge_sub.edata['label'][('site', 'sim', 'site')]
+    
+    return (batch_inputs_s, batch_inputs_sm, batch_inputs_c, batch_inputs_co, batch_inputs_sl, batch_inputs_ip), batch_labels
 
 def evaluate(model, data_loader, nfeat, device='cpu'):
     y_true = []
