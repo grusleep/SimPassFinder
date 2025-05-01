@@ -1,0 +1,1 @@
+python3 main.py --dataset_path ./dataset --setting inductive 2> error.log
