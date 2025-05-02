@@ -94,14 +94,11 @@ def train(args, device, dataset):
             batch_inputs, batch_labels = load_subtensor(*train_nfeat, edge_sub, input_nodes, device)
             blocks = [block.int().to(device) for block in blocks]
             output, attn = model(edge_sub, blocks, *batch_inputs)
-            probs = torch.sigmoid(output)  # [batch_size, 2]
-        
+            probs = torch.sigmoid(output)
             batch_labels = torch.nn.functional.one_hot(batch_labels.long(), num_classes=2).float()
             loss = loss_fn(probs.float(), batch_labels.float())
-            
             loss.backward()
             optimizer.step()
-
             total_loss += loss.item()
         train_loss = total_loss / len(train_loader)
         train_loss_list.append(train_loss)
@@ -112,14 +109,11 @@ def train(args, device, dataset):
             batch_inputs, batch_labels = load_subtensor(*valid_nfeat, edge_sub, input_nodes, device)
             blocks = [block.int().to(device) for block in blocks]
             output, attn = model(edge_sub, blocks, *batch_inputs)
-            probs = torch.sigmoid(output)  # [batch_size, 2]
-        
+            probs = torch.sigmoid(output)
             batch_labels = torch.nn.functional.one_hot(batch_labels.long(), num_classes=2).float()
             loss = loss_fn(probs.float(), batch_labels.float())
-            
             loss.backward()
             optimizer.step()
-
             total_loss += loss.item()    
         valid_loss = total_loss / len(valid_loader)
         valid_loss_list.append(valid_loss)
@@ -129,8 +123,7 @@ def train(args, device, dataset):
         f1_score = valid_result['macro avg']['f1-score']
         f1_list.append(f1_score)
         
-        if epoch%10 == 0:
-            print(f"[*] Epoch {epoch:4d} | Train Loss: {train_loss:.4f} | Valid Loss: {valid_loss:.4f} | f1-score: {f1_score:.4f} | Best f1-score: {max(f1_list):.4f}")
+        print(f"[*] Epoch {epoch:4d} | Train Loss: {train_loss:.4f} | Valid Loss: {valid_loss:.4f} | f1-score: {f1_score:.4f} | Best f1-score: {max(f1_list):.4f}")
         
         path = os.path.join(args.model_path, args.model_name, f"model_{epoch}.pth")
         save_checkpoint(path, model, optimizer, valid_result)

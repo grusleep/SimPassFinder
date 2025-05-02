@@ -39,11 +39,11 @@ def evaluate(model, data_loader, nfeat, device='cpu'):
             
             batch_pred, attn = model(edge_sub, blocks, *batch_inputs)
 
-            _score_list = batch_pred.detach().cpu().numpy().tolist()
-            score_list = np.argmax(_score_list, axis=1)
+            preds = batch_pred.argmax(dim=1)
         
-            y_true.extend(batch_labels.detach().cpu().long().numpy().tolist())
-            y_pred.extend(score_list)
+            y_true.extend(batch_labels.detach().cpu().long().tolist())
+            y_pred.extend(preds.detach().cpu().long().tolist())
         
     result = classification_report(y_true, y_pred, digits=4, output_dict=True, zero_division=0)
+    model.train()
     return result
