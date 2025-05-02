@@ -6,7 +6,7 @@ from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 
 class MLP(nn.Module):
     def __init__(self, args):
-        super(MLPClassifier, self).__init__()
+        super(MLP, self).__init__()
         self.emb_dim = args.embed_size
         self.n_hidden = args.hidden_size
         self.dropout = nn.Dropout(args.dropout)

@@ -75,7 +75,7 @@ def train(args, device, dataset):
     test_nfeat = dataset.pop_node_feature("test")
     
     print(f"[*] Initializing model")    
-    model = GraphSAGE(args).to(device)
+    model = MLP(args).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=float(args.max_lr))
     loss_fn = torch.nn.BCELoss()
     
