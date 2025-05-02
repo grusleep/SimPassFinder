@@ -22,7 +22,7 @@ class MLP(nn.Module):
 
         mlp_input_dim = self.emb_dim * 4 + 32
         self.mlp = nn.Sequential(
-            nn.Linear(mlp_input_dim, self.n_hidden),
+            nn.Linear(mlp_input_dim*2, self.n_hidden),
             nn.LeakyReLU(args.relu),
             nn.Dropout(args.dropout),
             nn.Linear(self.n_hidden, self.n_hidden),
@@ -32,6 +32,17 @@ class MLP(nn.Module):
         )
 
 
+    def apply_edges(self, edges):
+        h_u = edges.src['h']
+        h_v = edges.dst['h']
+        score = self.fc(torch.cat([h_u, h_v], 1))
+        score = self.relu(score)
+        score = self.dropout(score)
+        score = self.fc_out(score)
+        attn = torch.cat([edges.src['attn'].squeeze(-1).unsqueeze(1), edges.src['attn'].squeeze(-1).unsqueeze(1)], dim=1)
+        return {'score': score, 'attn': attn}
+    
+    
     def forward(self, edge_sub, blocks, inputs_s, inputs_sm, inputs_c, inputs_co, inputs_sl, inputs_ip):
         lengths = inputs_sm.sum(dim=1)
         url_emb = self.embed_url(inputs_s)
@@ -47,6 +58,9 @@ class MLP(nn.Module):
         sec_emb = self.embed_security_level(inputs_sl).squeeze(1)
         ip_emb = inputs_ip.float()
 
-        x = torch.cat([h, cat_emb, country_emb, sec_emb, ip_emb], dim=1)
-        out = self.mlp(x)
+        node_feat = torch.cat([h, cat_emb, country_emb, sec_emb, ip_emb], dim=1)
+        src, dst = edge_sub.edges(order='eid')
+        edge_feat = torch.cat([node_feat[src], node_feat[dst]], dim=1)
+
+        out = self.mlp(edge_feat)
         return out, None
