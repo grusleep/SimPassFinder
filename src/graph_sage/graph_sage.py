@@ -6,6 +6,8 @@ import torch
 import torch.nn as nn
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 
+
+
 class GraphSAGE(nn.Module):
     def __init__(self, args):
         super(GraphSAGE, self).__init__()
@@ -46,6 +48,7 @@ class GraphSAGE(nn.Module):
         self.fc = nn.Linear(self.n_hidden*2, self.n_hidden)
         self.fc_out = nn.Linear(self.n_hidden, 2)
         
+        
     def apply_edges(self, edges):
         h_u = edges.src['h']
         h_v = edges.dst['h']
@@ -55,6 +58,7 @@ class GraphSAGE(nn.Module):
         score = self.fc_out(score)
         attn = torch.cat([edges.src['attn'].squeeze(-1).unsqueeze(1), edges.src['attn'].squeeze(-1).unsqueeze(1)], dim=1)
         return {'score': score, 'attn': attn}
+
 
     def forward(self, edge_sub, blocks, inputs_s, inputs_sm, inputs_c, inputs_co, inputs_sl, inputs_ip):
         assert inputs_s.shape[1] == inputs_sm.shape[1]

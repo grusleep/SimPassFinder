@@ -1,1 +1,1 @@
-from .classifier import *
+from .graph_sage import *
