@@ -30,8 +30,9 @@ def init():
     parser.add_argument('--gnn_depth', type=int, default=2, help='depth of the GNN')
     parser.add_argument('--max_lr', type=float, default=0.001, help='maximum learning rate')
     parser.add_argument('--warmup', type=float, default=0.1, help='warmup ratio for learning rate')
-    parser.add_argument('--max_epoch', type=int, default=1000, help='maximum number of epochs')
-    parser.add_argument('--early_stop', type=int, default=40, help='early stopping epochs')
+    parser.add_argument('--max_epoch', type=int, default=10000, help='maximum number of epochs')
+    parser.add_argument('--early_stop', type=int, default=100, help='early stopping epochs')
+    parser.add_argument('--min_delta', type=float, default=1e-4, help='early stopping epochs')
 
     args = parser.parse_args()
     
@@ -82,6 +83,7 @@ def train(args, device, dataset):
         model = GraphSAGE(args).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=float(args.max_lr))
     loss_fn = torch.nn.BCELoss()
+    early_stopper = EarlyStopping(args)
     
     print(f"[*] Training model")
     train_loss_list = []
@@ -135,11 +137,8 @@ def train(args, device, dataset):
             path = os.path.join(args.model_path, args.model_name, "model_best.pth")
             save_checkpoint(path, model, optimizer, valid_result)
             
-        if valid_loss <= min(valid_loss_list):
-            not_improved = 0
-        else:
-            not_improved += 1
-        if not_improved >= args.early_stop:
+        early_stopper(valid_loss)
+        if early_stopper.early_stop:
             print(f"[*] Early stopping at epoch {epoch}")
             break
     print(f"[+] Done training\n\n")
