@@ -20,6 +20,7 @@ def init():
     parser.add_argument('--edge_thv', type=float, default=0.5, help='threshold for edge')
     parser.add_argument('--valid', type=float, default=0.2, help='split ratio of validation set')
     parser.add_argument('--test', type=float, default=0.2, help='split ratio of test set')
+    parser.add_argument('--model', type=str, default="mlp", help='model type')
     parser.add_argument('--dropout', type=float, default=0.5, help='dropout ratio')
     parser.add_argument('--random_seed', type=int, default=1, help='random seed for initialization')
     parser.add_argument('--relu', type=float, default=0.2, help='ReLU threshold')
@@ -74,8 +75,11 @@ def train(args, device, dataset):
     valid_nfeat = dataset.pop_node_feature("valid")
     test_nfeat = dataset.pop_node_feature("test")
     
-    print(f"[*] Initializing model")    
-    model = GraphSAGE(args).to(device)
+    print(f"[*] Initializing model {args.model}")
+    if args.model == "mlp":
+        model = MLP(args).to(device)
+    elif args.model == "graph_sage":    
+        model = GraphSAGE(args).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=float(args.max_lr))
     loss_fn = torch.nn.BCELoss()
     

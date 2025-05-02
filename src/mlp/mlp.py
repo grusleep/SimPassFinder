@@ -49,4 +49,4 @@ class MLP(nn.Module):
 
         x = torch.cat([h, cat_emb, country_emb, sec_emb, ip_emb], dim=1)
         out = self.mlp(x)
-        return out
+        return out, None
