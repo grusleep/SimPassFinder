@@ -29,7 +29,7 @@ def init():
     parser.add_argument('--gnn_depth', type=int, default=2, help='depth of the GNN')
     parser.add_argument('--max_lr', type=float, default=0.001, help='maximum learning rate')
     parser.add_argument('--warmup', type=float, default=0.1, help='warmup ratio for learning rate')
-    parser.add_argument('--max_epoch', type=int, default=200, help='maximum number of epochs')
+    parser.add_argument('--max_epoch', type=int, default=1000, help='maximum number of epochs')
     parser.add_argument('--early_stop', type=int, default=40, help='early stopping epochs')
 
     args = parser.parse_args()

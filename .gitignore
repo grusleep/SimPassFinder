@@ -1,11 +1,11 @@
 # Folders
-/dataset/collection/
-/dataset/extract/
-/dataset/HASH+NOHASH/
-/dataset/json/
-/dataset/meta_data/
-/dataset/NOHASH/
-/dataset/sites/
+dataset/collection/
+dataset/extract/
+dataset/HASH+NOHASH/
+dataset/json/
+dataset/meta_data/
+dataset/NOHASH/
+dataset/sites/
 !/dataset/dataset.txt
 .vscode/
 __pycache__/
