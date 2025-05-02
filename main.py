@@ -95,8 +95,6 @@ def train(args, device, dataset):
         total_loss = 0.0
         for input_nodes, edge_sub, blocks in train_loader:
             optimizer.zero_grad()
-            print(input_nodes.shape)
-            print(edge_sub.shape)
             batch_inputs, batch_labels = load_subtensor(*train_nfeat, edge_sub, input_nodes, device)
             blocks = [block.int().to(device) for block in blocks]
             output, attn = model(edge_sub, blocks, *batch_inputs)

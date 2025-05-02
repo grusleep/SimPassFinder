@@ -10,11 +10,11 @@ dataset/sites/
 .vscode/
 __pycache__/
 model/
+log/
 
 
 # Files
 test.py
 *.tar.gz
 *.tgz
-error.log
 *.sh
