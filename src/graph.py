@@ -140,7 +140,7 @@ class CustomDataset():
     
     def encoding_node(self):
         print(f"[*] Start encoding node")
-        for node in tqdm(self.nodes, desc="[*] Encoding nodes"):
+        for node in self.nodes:
             encode_node = self.__encoding_node(node)
             node["site"] = encode_node["site"]
             node["category"] = encode_node["category"]

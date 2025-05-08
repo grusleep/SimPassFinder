@@ -59,7 +59,7 @@ class MLP(nn.Module):
         ip_emb = inputs_ip.float()
 
         node_feat = torch.cat([h, cat_emb, country_emb, sec_emb, ip_emb], dim=1)
-        src, dst = edge_sub.edges(order='eid')
+        src, dst = edge_sub.edges(etype='sim',order='eid')
         edge_feat = torch.cat([node_feat[src], node_feat[dst]], dim=1)
 
         out = self.mlp(edge_feat)

@@ -30,4 +30,4 @@ def save_checkpoint(path, model, optimizer, valid_result):
 
 
 def tqdm(*args, **kwargs):
-    return _tqdm(*args, file=sys.stdout, **kwargs)
+    return _tqdm(*args, file=sys.stderr, **kwargs)
