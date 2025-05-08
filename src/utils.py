@@ -1,4 +1,5 @@
 import re
+import os
 import sys
 import torch
 from tqdm import tqdm as _tqdm
@@ -31,3 +32,26 @@ def save_checkpoint(path, model, optimizer, valid_result):
 
 def tqdm(*args, **kwargs):
     return _tqdm(*args, file=sys.stderr, **kwargs)
+
+
+
+class Logger:
+    def __init__(self, args):
+        self.model_name = args.model_name
+        print(self.model_name)
+        self.log_path = os.path.join("log", f"{self.model_name}.log")
+        self.reset_log()
+        
+        
+    def reset_log(self):
+        with open(self.log_path, 'w') as f:
+            f.write("")
+        
+        
+        
+    def print(self, msg):
+        print(msg)
+        with open(self.log_path, 'a') as f:
+            f.write(msg + "\n")
+    
+    

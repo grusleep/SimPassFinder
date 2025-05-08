@@ -11,7 +11,7 @@ from .utils import *
 
 
 class CustomDataset():
-    def __init__(self, args, device):
+    def __init__(self, args, device, logger):
         self.dataset_path = args.dataset_path
         self.edge_thv = args.edge_thv
         self.splitting_type = args.setting
@@ -21,6 +21,7 @@ class CustomDataset():
         self.device = device
         self.random_seed = args.random_seed
         self.batch_size = args.batch_size
+        self.logger = logger
         self.load_category()
         self.load_country()
         self.load_node()
@@ -28,48 +29,48 @@ class CustomDataset():
         
         
     def load_meta_data(self):
-        print(f"[*] Loading meta data")
+        self.logger.print(f"[*] Loading meta data")
         with open(os.path.join(self.dataset_path, "meta_data","meta_data.json"), "r") as f:
             self.meta_data = json.load(f)
-        print(f"[+] Done loading meta data")
-        print(f"[+] Number of sites: {len(self.meta_data)}\n")
+        self.logger.print(f"[+] Done loading meta data")
+        self.logger.print(f"[+] Number of sites: {len(self.meta_data)}\n")
     
     
     def load_edge(self):
-        print(f"[*] Loading edges")
+        self.logger.print(f"[*] Loading edges")
         with open(os.path.join(self.dataset_path, "graph", "edges.json"), "r") as f:
             self.edges = json.load(f)
-        print(f"[+] Done loading edges")
-        print(f"[+] Number of edges: {len(self.edges)}\n")
+        self.logger.print(f"[+] Done loading edges")
+        self.logger.print(f"[+] Number of edges: {len(self.edges)}\n")
 
 
     def load_node(self):
-        print(f"[*] Loading nodes")
+        self.logger.print(f"[*] Loading nodes")
         with open(os.path.join(self.dataset_path, "graph", f"nodes.json"), "r") as f:
             self.nodes = json.load(f)
-        print(f"[+] Done loading nodes")
-        print(f"[+] Number of nodes: {len(self.nodes)}\n")
+        self.logger.print(f"[+] Done loading nodes")
+        self.logger.print(f"[+] Number of nodes: {len(self.nodes)}\n")
         
     
     def load_country(self):
-        print(f"[*] Loading countries")
+        self.logger.print(f"[*] Loading countries")
         with open(os.path.join(self.dataset_path, "graph", "countries.json"), "r") as f:
             self.countries = json.load(f)
-        print(f"[+] Done loading countries")
-        print(f"[+] Number of countries: {len(self.countries)}\n")
+        self.logger.print(f"[+] Done loading countries")
+        self.logger.print(f"[+] Number of countries: {len(self.countries)}\n")
             
     
     def load_category(self):
-        print(f"[*] Loading categories")
+        self.logger.print(f"[*] Loading categories")
         with open(os.path.join(self.dataset_path, "graph", "categories.json"), "r") as f:
             self.categories = json.load(f)
-        print(f"[+] Done loading categories")
-        print(f"[+] Number of categories: {len(self.categories)}\n")
+        self.logger.print(f"[+] Done loading categories")
+        self.logger.print(f"[+] Number of categories: {len(self.categories)}\n")
     
     
     def set_node(self, save=True):
         self.nodes = []
-        print(f"[*] Start Setting nodes")
+        self.logger.print(f"[*] Start Setting nodes")
         
         for site in tqdm(list(self.meta_data.keys()), desc="[*] Setting nodes"):
             node = {}
@@ -79,19 +80,19 @@ class CustomDataset():
             node["security_level"] = self.meta_data[site]["security_level"]
             node["ip"] = self.meta_data[site]["ip"]
             self.nodes.append(node)
-        print(f"[+] Done setting nodes")
-        print(f"[+] Number of nodes: {len(self.nodes)}")
+        self.logger.print(f"[+] Done setting nodes")
+        self.logger.print(f"[+] Number of nodes: {len(self.nodes)}")
         
         if save:
             node_file = os.path.join(self.dataset_path, "graph", f"nodes.json")
             with open(node_file, "w", encoding="utf-8") as f:
                 json.dump(self.nodes, f, indent=4, ensure_ascii=False)
-            print(f"[+] Saved nodes to {node_file}")
+            self.logger.print(f"[+] Saved nodes to {node_file}")
         
         
     def set_edge(self, save=True):
         self.edges = []
-        print(f"[*] Start Setting edges")
+        self.logger.print(f"[*] Start Setting edges")
         
         for i in tqdm(range(len(self.nodes)), desc="[*] Setting edges"):
             for j in range(i + 1, len(self.nodes)):
@@ -121,7 +122,7 @@ class CustomDataset():
             edge_file = os.path.join(self.dataset_path, "graph", f"edges.json")
             with open(edge_file, "w", encoding="utf-8") as f:
                 json.dump(self.edges, f, indent=4, ensure_ascii=False)
-            print(f"[+] Saved edges to {edge_file}\n")
+            self.logger.print(f"[+] Saved edges to {edge_file}\n")
             
             
     def __encoding_node(self, node):
@@ -139,7 +140,7 @@ class CustomDataset():
     
     
     def encoding_node(self):
-        print(f"[*] Start encoding node")
+        self.logger.print(f"[*] Start encoding node")
         for node in self.nodes:
             encode_node = self.__encoding_node(node)
             node["site"] = encode_node["site"]
@@ -147,10 +148,10 @@ class CustomDataset():
             node["country"] = encode_node["country"]
             node["security_level"] = encode_node["security_level"]
             node["ip"] = encode_node["ip"]
-        print(f"[+] Done encoding nodes\n")
+        self.logger.print(f"[+] Done encoding nodes\n")
     
     def build_graph(self):
-        print(f"[*] Start building graph")
+        self.logger.print(f"[*] Start building graph")
         
         node_1_list = [edge["node_1"] for edge in self.edges]
         node_2_list = [edge["node_2"] for edge in self.edges]
@@ -192,27 +193,27 @@ class CustomDataset():
         self.graph.edata["label"][sim_etype][eid_fwd] = torch.tensor(label_list, dtype=torch.float)
         self.graph.edata["label"][sim_etype][eid_rev] = torch.tensor(label_list, dtype=torch.float)
         
-        print(f"[+] Done building graph\n")
+        self.logger.print(f"[+] Done building graph\n")
         
         
     def print_graph(self, print_type="all"):
-        print(f"[+] Graph information")
+        self.logger.print(f"[+] Graph information")
         if print_type == "all":
-            print(f"[+] Nodes: {self.graph.num_nodes()}")
-            print(f"[+] Edges: {self.graph.num_edges()}")
+            self.logger.print(f"[+] Nodes: {self.graph.num_nodes()}")
+            self.logger.print(f"[+] Edges: {self.graph.num_edges()}")
         elif print_type == "split": 
             if self.splitting_type == "inductive":
-                print(f"[+] Graph type: Inductive")
-                print(f"[+] Train| nodes: {self.graph_split['train'].num_nodes()}, edges: {self.graph_split['train'].num_edges()}")
-                print(f"[+] Valid| nodes: {self.graph_split['valid'].num_nodes()}, edges: {self.graph_split['valid'].num_edges()}")
-                print(f"[+] Test | nodes: {self.graph_split['test'].num_nodes()}, edges: {self.graph_split['test'].num_edges()}")
+                self.logger.print(f"[+] Graph type: Inductive")
+                self.logger.print(f"[+] Train| nodes: {self.graph_split['train'].num_nodes()}, edges: {self.graph_split['train'].num_edges()}")
+                self.logger.print(f"[+] Valid| nodes: {self.graph_split['valid'].num_nodes()}, edges: {self.graph_split['valid'].num_edges()}")
+                self.logger.print(f"[+] Test | nodes: {self.graph_split['test'].num_nodes()}, edges: {self.graph_split['test'].num_edges()}")
             else:
-                print(f"[+] Graph type: Transductive")
-                print(f"[+] All nodes: {self.graph.num_nodes()}")
-                print(f"[+] Train| edges: {self.edge_split['train']}")
-                print(f"[+] Valid| edges: {self.edge_split['valid']}")
-                print(f"[+] Test | edges: {self.edge_split['test']}")
-        print("")
+                self.logger.print(f"[+] Graph type: Transductive")
+                self.logger.print(f"[+] All nodes: {self.graph.num_nodes()}")
+                self.logger.print(f"[+] Train| edges: {self.edge_split['train']}")
+                self.logger.print(f"[+] Valid| edges: {self.edge_split['valid']}")
+                self.logger.print(f"[+] Test | edges: {self.edge_split['test']}")
+        self.logger.print("")
     
     
     def inductive_split(self):
@@ -244,19 +245,19 @@ class CustomDataset():
     
     
     def split(self):
-        print(f"[*] Start splitting graph")
-        print(f"[*] Splitting type: {self.splitting_type}")
+        self.logger.print(f"[*] Start splitting graph")
+        self.logger.print(f"[*] Splitting type: {self.splitting_type}")
         if self.splitting_type == "inductive":
             self.graph_split, self.node_split = self.inductive_split()
         else:
             self.edge_split = self.transductive_split()
-        print(f"[+] Done splitting graph\n")
+        self.logger.print(f"[+] Done splitting graph\n")
         
         self.print_graph(print_type="split")
         
         
     def get_dataset_loader(self, data_type):
-        print(f"[*] Start getting dataset loader for {data_type}")
+        self.logger.print(f"[*] Start getting dataset loader for {data_type}")
         if self.splitting_type == "inductive":
             graph = self.graph_split[data_type]
         else:

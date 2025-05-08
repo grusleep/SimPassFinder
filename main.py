@@ -9,7 +9,6 @@ TOTAL_WIDTH = 50
 
 
 def init():
-    print("Initializing".center(TOTAL_WIDTH, "="))
     parser = argparse.ArgumentParser(description="Parser for model configuration")
 
     parser.add_argument('--dataset_path', type=str, required=True, help='dataset_path')
@@ -30,44 +29,46 @@ def init():
     parser.add_argument('--gnn_depth', type=int, default=2, help='depth of the GNN')
     parser.add_argument('--max_lr', type=float, default=0.001, help='maximum learning rate')
     parser.add_argument('--warmup', type=float, default=0.1, help='warmup ratio for learning rate')
-    parser.add_argument('--max_epoch', type=int, default=10000, help='maximum number of epochs')
-    parser.add_argument('--early_stop', type=int, default=100, help='early stopping epochs')
+    parser.add_argument('--max_epoch', type=int, default=1000, help='maximum number of epochs')
+    parser.add_argument('--early_stop', type=int, default=50, help='early stopping epochs')
     parser.add_argument('--min_delta', type=float, default=1e-4, help='early stopping epochs')
 
     args = parser.parse_args()
+    logger = Logger(args)
+    logger.print("Initializing".center(TOTAL_WIDTH, "="))
     
-    print(f"[+] Arguments")
+    logger.print(f"[+] Arguments")
     pprint(vars(args))
 
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    print(f'[+] device: {device}')
-    print("\n")
-    return args, device
+    logger.print(f'[+] device: {device}')
+    logger.print("\n")
+    return args, device, logger
 
 
 
-def init_dataset(args, device):
-    print("Initializing Dataset".center(TOTAL_WIDTH, "="))
-    graph = CustomDataset(args, device)
+def init_dataset(args, device, logger):
+    logger.print("Initializing Dataset".center(TOTAL_WIDTH, "="))
+    graph = CustomDataset(args, device, logger)
     graph.load_node()
     graph.load_edge()
     graph.encoding_node()
     graph.build_graph()
     graph.split()
-    print("")
+    logger.print("")
     return graph
 
 
-def train(args, device, dataset):
-    print("Training".center(TOTAL_WIDTH, "="))
-    print(f"[*] Initializing save path")
+def train(args, device, dataset, logger):
+    logger.print("Training".center(TOTAL_WIDTH, "="))
+    logger.print(f"[*] Initializing save path")
     path = os.path.join(args.model_path, args.model_name)
     if os.path.exists(path):
         shutil.rmtree(path)
     os.makedirs(path)
 
     
-    print(f"[*] Getting dataset loader")
+    logger.print(f"[*] Getting dataset loader")
     train_loader = dataset.get_dataset_loader("train")
     valid_loader = dataset.get_dataset_loader("valid")
     test_loader = dataset.get_dataset_loader("test")
@@ -76,7 +77,7 @@ def train(args, device, dataset):
     valid_nfeat = dataset.pop_node_feature("valid")
     test_nfeat = dataset.pop_node_feature("test")
     
-    print(f"[*] Initializing model {args.model}")
+    logger.print(f"[*] Initializing model {args.model}")
     if args.model == "mlp":
         model = MLP(args).to(device)
     elif args.model == "graph_sage":    
@@ -85,7 +86,7 @@ def train(args, device, dataset):
     loss_fn = torch.nn.BCELoss()
     early_stopper = EarlyStopping(args)
     
-    print(f"[*] Training model")
+    logger.print(f"[*] Training model")
     train_loss_list = []
     valid_loss_list = []
     f1_list = []
@@ -129,7 +130,7 @@ def train(args, device, dataset):
         f1_score = valid_result['macro avg']['f1-score']
         f1_list.append(f1_score)
         
-        print(f"[*] Epoch {epoch:4d} | Train Loss: {train_loss:.4f} | Valid Loss: {valid_loss:.4f} | f1-score: {f1_score:.4f} | Best f1-score: {max(f1_list):.4f}")
+        logger.print(f"[*] Epoch {epoch:4d} | Train Loss: {train_loss:.4f} | Valid Loss: {valid_loss:.4f} | f1-score: {f1_score:.4f} | Best f1-score: {max(f1_list):.4f}")
         
         path = os.path.join(args.model_path, args.model_name, f"model_{epoch}.pth")
         save_checkpoint(path, model, optimizer, valid_result)
@@ -139,13 +140,13 @@ def train(args, device, dataset):
             
         early_stopper(valid_loss)
         if early_stopper.early_stop:
-            print(f"[*] Early stopping at epoch {epoch}")
+            logger.print(f"[*] Early stopping at epoch {epoch}")
             break
-    print(f"[+] Done training\n\n")
+    logger.print(f"[+] Done training\n\n")
         
         
         
 if __name__ == "__main__":
-    args, device = init()
-    dataset = init_dataset(args, device)
-    train(args, device, dataset)
+    args, device, logger = init()
+    dataset = init_dataset(args, device, logger)
+    train(args, device, dataset, logger)
