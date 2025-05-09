@@ -39,14 +39,13 @@ class Logger:
     def __init__(self, args):
         self.model_name = args.model_name
         print(self.model_name)
-        self.log_path = os.path.join("log", f"{self.model_name}.log")
+        self.log_path = os.path.join("log", args.setting, f"{self.model_name}.log")
         self.reset_log()
         
         
     def reset_log(self):
         with open(self.log_path, 'w') as f:
             f.write("")
-        
         
         
     def print(self, msg):

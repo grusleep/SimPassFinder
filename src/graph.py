@@ -210,9 +210,9 @@ class CustomDataset():
             else:
                 self.logger.print(f"[+] Graph type: Transductive")
                 self.logger.print(f"[+] All nodes: {self.graph.num_nodes()}")
-                self.logger.print(f"[+] Train| edges: {self.edge_split['train']}")
-                self.logger.print(f"[+] Valid| edges: {self.edge_split['valid']}")
-                self.logger.print(f"[+] Test | edges: {self.edge_split['test']}")
+                self.logger.print(f"[+] Train| edges: {len(self.edge_split['train'])}")
+                self.logger.print(f"[+] Valid| edges: {len(self.edge_split['valid'])}")
+                self.logger.print(f"[+] Test | edges: {len(self.edge_split['test'])}")
         self.logger.print("")
     
     
@@ -233,15 +233,15 @@ class CustomDataset():
 
 
     def transductive_split(self):
-        valid_portion, test_portion = self.args.valid, self.args.test
+        valid_portion, test_portion = self.valid, self.test
 
         p1 = valid_portion + test_portion
         p2 = test_portion / (valid_portion + test_portion)
 
-        train_edge, valid_edge = train_test_split(self.graph.edges(etype='sim', form='eid'), test_size=p1, shuffle=True, random_state=self.args.random_seed)
-        valid_edge, test_edge = train_test_split(valid_edge, test_size=p2, shuffle=True, random_state=self.args.random_seed)
+        train_edge, valid_edge = train_test_split(self.graph.edges(etype='sim', form='eid'), test_size=p1, shuffle=True, random_state=self.random_seed)
+        valid_edge, test_edge = train_test_split(valid_edge, test_size=p2, shuffle=True, random_state=self.random_seed)
         
-        return {'train': train_edge, 'valid': valid_edge, 'test': test_edge}, {'train': train_edge, 'valid': valid_edge, 'test': test_edge}
+        return {'train': train_edge, 'valid': valid_edge, 'test': test_edge}
     
     
     def split(self):

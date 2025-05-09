@@ -62,7 +62,7 @@ def init_dataset(args, device, logger):
 def train(args, device, dataset, logger):
     logger.print("Training".center(TOTAL_WIDTH, "="))
     logger.print(f"[*] Initializing save path")
-    path = os.path.join(args.model_path, args.model_name)
+    path = os.path.join(args.model_path, args.setting, args.model_name)
     if os.path.exists(path):
         shutil.rmtree(path)
     os.makedirs(path)
@@ -73,9 +73,14 @@ def train(args, device, dataset, logger):
     valid_loader = dataset.get_dataset_loader("valid")
     test_loader = dataset.get_dataset_loader("test")
     
-    train_nfeat = dataset.pop_node_feature("train")
-    valid_nfeat = dataset.pop_node_feature("valid")
-    test_nfeat = dataset.pop_node_feature("test")
+    if args.setting == "inductive":
+        train_nfeat = dataset.pop_node_feature("train")
+        valid_nfeat = dataset.pop_node_feature("valid")
+        test_nfeat = dataset.pop_node_feature("test")
+    elif args.setting == "transductive":
+        train_nfeat = dataset.pop_node_feature("train")
+        valid_nfeat = train_nfeat
+        test_nfeat = train_nfeat
     
     logger.print(f"[*] Initializing model {args.model}")
     if args.model == "mlp":
@@ -132,16 +137,18 @@ def train(args, device, dataset, logger):
         
         logger.print(f"[*] Epoch {epoch:4d} | Train Loss: {train_loss:.4f} | Valid Loss: {valid_loss:.4f} | f1-score: {f1_score:.4f} | Best f1-score: {max(f1_list):.4f}")
         
-        path = os.path.join(args.model_path, args.model_name, f"model_{epoch}.pth")
+        path = os.path.join(args.model_path, args.setting, args.model_name, f"model_{epoch}.pth")
         save_checkpoint(path, model, optimizer, valid_result)
         if f1_score >= max(f1_list):
-            path = os.path.join(args.model_path, args.model_name, "model_best.pth")
+            path = os.path.join(args.model_path, args.setting, args.model_name, "model_best.pth")
             save_checkpoint(path, model, optimizer, valid_result)
             
         early_stopper(valid_loss)
         if early_stopper.early_stop:
             logger.print(f"[*] Early stopping at epoch {epoch}")
             break
+    test_result = evaluate(model, test_loader, test_nfeat, device)
+    logger.print(f"[+] Test result | accuracy: {test_result['accuracy']:.4f} | f1-score: {test_result['macro avg']['f1-score']:.4f} | precision: {test_result['macro avg']['precision']:.4f} | recall: {test_result['macro avg']['recall']:.4f}")
     logger.print(f"[+] Done training\n\n")
         
         
