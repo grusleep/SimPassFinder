@@ -84,10 +84,6 @@ class GraphSAGE(nn.Module):
         _vec_url = self.relu(_vec_url)
         _vec_url = self.dropout(_vec_url)
         vec_url = _vec_url
-        
-        for block in blocks:
-            neg_edge_index = (block.edata['weight'][('site', 'sim', 'site')] != 0).nonzero().int().squeeze(1)
-            block.remove_edges(neg_edge_index, etype='sim')
     
         h1 = vec_url
         for i in range(self.num_layers):

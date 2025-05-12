@@ -96,7 +96,6 @@ def train(args, device, dataset, logger):
     valid_loss_list = []
     f1_list = []
     result_list = []
-    not_improved = 0
     
     model.train()
     for epoch in range(1, args.max_epoch+1):

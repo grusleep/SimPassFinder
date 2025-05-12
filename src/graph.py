@@ -155,7 +155,6 @@ class CustomDataset():
         
         node_1_list = [edge["node_1"] for edge in self.edges]
         node_2_list = [edge["node_2"] for edge in self.edges]
-        weight_list = [edge["weight"] for edge in self.edges]
         label_list = [1 if edge["weight"] > self.edge_thv else 0 for edge in self.edges]
         
         data_dict = {
@@ -175,20 +174,13 @@ class CustomDataset():
         self.graph.ndata["security_level"] = torch.tensor([node["security_level"] for node in self.nodes])
         self.graph.ndata["ip"] = torch.tensor([node["ip"] for node in self.nodes])
         
-        # Edge features for the "sim" relation type
         sim_etype = ("site", "sim", "site")
         num_sim_edges = self.graph.num_edges(etype=sim_etype)
 
-        # Initialize weight and label tensors matching total edge count
-        self.graph.edata["weight"] = {sim_etype: torch.zeros(num_sim_edges, dtype=torch.float)}
         self.graph.edata["label"]  = {sim_etype: torch.zeros(num_sim_edges, dtype=torch.float)}
 
-        # Assign forward and reverse edge attributes
         eid_fwd = self.graph.edge_ids(node_1_list, node_2_list, etype=sim_etype)
         eid_rev = self.graph.edge_ids(node_2_list, node_1_list, etype=sim_etype)
-
-        self.graph.edata["weight"][sim_etype][eid_fwd] = torch.tensor(weight_list, dtype=torch.float)
-        self.graph.edata["weight"][sim_etype][eid_rev] = torch.tensor(weight_list, dtype=torch.float)
 
         self.graph.edata["label"][sim_etype][eid_fwd] = torch.tensor(label_list, dtype=torch.float)
         self.graph.edata["label"][sim_etype][eid_rev] = torch.tensor(label_list, dtype=torch.float)

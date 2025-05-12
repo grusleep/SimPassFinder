@@ -131,7 +131,7 @@ class SAGEConvN(nn.Module):
                 graph.multi_update_all(
                     {'user': (msg_fn_ori, fn.mean('m', 'neigh')),
                      'site': (msg_fn_ori, fn.mean('m', 'neigh'))},
-                concat)
+                    'mean')
                 h_neigh = graph.dstdata['neigh']
                 h_neigh = self.fc_neigh(h_neigh)
             elif self._aggre_type == 'attn':
@@ -173,19 +173,19 @@ class SAGEConvN(nn.Module):
                 graph.srcdata.update({'ft_r': h_src_r, 'el_r': el_r})
                 graph.dstdata.update({'er_r': er_r})
 
-                graph.apply_edges(fn.u_add_v('el_r', 'er_r', 'e_r'))
-                e_r = self.leaky_relu(graph.edata.pop('e_r'))
+                graph.apply_edges(fn.u_add_v('el_r', 'er_r', 'e_r'), etype="sim")
+                e_r = self.leaky_relu(graph.edata.pop('e_r')[('site', 'sim', 'site')])
 
-                graph.edata['a_r'] = edge_softmax(graph, e_r)
+                graph.edata['a_r'] = {('site', 'sim', 'site'): edge_softmax(graph['sim'], e_r)}
                 
-                graph.update_all(fn.u_mul_e('ft_r', 'a_r', 'm_r'), fn.sum('m_r', 'neigh'))
+                graph.multi_update_all({"sim": (fn.u_mul_e('ft_r', 'a_r', 'm_r'), fn.sum('m_r', 'neigh'))}, "mean")
                 h_neigh = graph.dstdata['neigh']
                 h_neigh = F.normalize(self.leaky_relu(self.fc_neigh(h_neigh)))
             elif self._aggre_type == 'no_neighbor':
                 graph.srcdata['h'] = feat_src
 
-                graph.multi_update_all({'user': (fn.copy_src('h', 'm'), fn.mean('m', 'neigh')),
-                                        'sim': (fn.copy_src('h', 'm'), fn.mean('m', 'neigh'))
+                graph.multi_update_all({'user': (fn.copy_u('h', 'm'), fn.mean('m', 'neigh')),
+                                        'sim': (fn.copy_u('h', 'm'), fn.mean('m', 'neigh'))
                                         },
                                         'mean')
                 h_neigh = graph.dstdata['neigh']
@@ -200,9 +200,9 @@ class SAGEConvN(nn.Module):
                         graph.dstdata['h'] = graph.srcdata['h'][:graph.num_dst_nodes()]
                     else:
                         graph.dstdata['h'] = graph.srcdata['h']
-                graph.update_all(msg_fn, fn.sum('m', 'neigh'))
+                graph.multi_update_all({"sim": (msg_fn, fn.sum('m', 'neigh'))}, "mean")
                 # divide in_degrees
-                degs = graph.in_degrees().to(feat_dst)
+                degs = graph.in_degrees(etype=("site", "sim", "site")).to(feat_dst)
                 h_neigh = (graph.dstdata['neigh'] + graph.dstdata['h']) / (degs.unsqueeze(-1) + 1)
                 if not lin_before_mp:
                     h_neigh = self.fc_neigh(h_neigh)
