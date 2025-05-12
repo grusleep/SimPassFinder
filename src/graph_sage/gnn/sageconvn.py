@@ -55,7 +55,7 @@ class SAGEConvN(nn.Module):
             self.leaky_relu = nn.LeakyReLU(0.2)
             self.fc_neigh = nn.Linear(self._in_src_feats, out_feats)
         else:
-            self.fc_neigh = nn.Linear(self._in_src_feats*2, out_feats, bias=False)
+            self.fc_neigh = nn.Linear(self._in_src_feats, out_feats, bias=False)
         if bias:
             self.bias = nn.parameter.Parameter(torch.zeros(self._out_feats))
         else:
@@ -130,7 +130,7 @@ class SAGEConvN(nn.Module):
 
                 graph.multi_update_all(
                     {'user': (msg_fn_ori, fn.mean('m', 'neigh')),
-                     'site': (msg_fn_ori, fn.mean('m', 'neigh'))},
+                     'sim': (msg_fn_ori, fn.mean('m', 'neigh'))},
                     'mean')
                 h_neigh = graph.dstdata['neigh']
                 h_neigh = self.fc_neigh(h_neigh)
@@ -212,7 +212,7 @@ class SAGEConvN(nn.Module):
             # GraphSAGE GCN does not require fc_self.
             if self._aggre_type == 'gcn':
                 rst = h_neigh
-            if self._aggre_type == 'attn':
+            elif self._aggre_type == 'attn':
                 rst = h_neigh
             else:
                 rst = self.fc_self(h_self) + h_neigh
