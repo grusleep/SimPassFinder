@@ -22,7 +22,7 @@ class GCN(nn.Module):
         self.lstm = nn.LSTM(self.emb_dim, self.emb_dim, batch_first=True, bidirectional=True)
         self.fc_lstm = nn.Linear(self.emb_dim * 2, self.emb_dim)
 
-        self.input_dim = 1056  # +4 for float IP
+        self.input_dim = self.emb_dim * 4 + 32  # +4 for float IP
 
         # GCN layers with HeteroGraphConv (edge type: 'sim')
         self.gcn_layers = nn.ModuleList()
@@ -39,8 +39,8 @@ class GCN(nn.Module):
         # Final edge-level classifier
         self.classifier = nn.Sequential(
             nn.Linear(self.hidden_size * 2, self.hidden_size),
+            nn.BatchNorm1d(self.hidden_size),
             nn.ReLU(),
-            nn.Dropout(args.dropout),
             nn.Linear(self.hidden_size, 2)
         )
 
@@ -63,14 +63,13 @@ class GCN(nn.Module):
         h = torch.cat([h_url, h_cat, h_country, h_sec, h_ip], dim=1)
 
         # 2. GNN propagation using HeteroGraphConv
-        node_type = blocks[0].ntypes[0]  # e.g., 'site'
-        h_dict = {node_type: h}
+        h_dict = {'site': h}
         for i in range(self.num_layers):
             h_dict = self.gcn_layers[i](blocks[i], h_dict)
-            h = h_dict[node_type]
+            h = h_dict['site']
             h = self.relu(h)
             h = self.dropout(h)
-            h_dict[node_type] = h
+            h_dict['site'] = h
 
 
         # 3. Edge-level prediction
