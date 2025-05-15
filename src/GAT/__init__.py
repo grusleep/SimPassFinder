@@ -1,1 +1,1 @@
-from gat import *
+from .gat import *

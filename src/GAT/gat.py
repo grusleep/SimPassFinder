@@ -11,7 +11,7 @@ class GAT(nn.Module):
         self.emb_dim = args.embed_size
         self.n_hidden = args.hidden_size
         self.n_layers = args.gnn_depth
-        self.n_heads = 1
+        self.n_heads = 4
         self.dropout = nn.Dropout(args.dropout)
         self.relu = nn.LeakyReLU(args.relu)
 
@@ -22,21 +22,27 @@ class GAT(nn.Module):
 
         self.lstm = nn.LSTM(self.emb_dim, self.emb_dim, batch_first=True, bidirectional=True)
         self.fc_lstm = nn.Linear(self.emb_dim * 2, self.emb_dim)
-        
-        heads = [self.n_heads] * [self.n_layers - 1] + [1]
-        input_dim = 4 * self.emb_dim + self.ip_dim
-        self.gat_convs = nn.ModuleList()
-        for l in range(self.n_layers):
-            in_dim = input_dim if l == 0 else self.n_hidden * heads[l-1]
-            out_dim = self.n_hidden if l != self.n_layers - 1 else self.emb_dim
-            activation = self.relu if l != self.n_layers - 1 else None
-            self.gat_convs.append(
-                GATConv(
-                    in_dim, out_dim, heads[l],
-                    feat_drop=args.dropout, attn_drop=args.dropout,
-                    activation=activation
-                )
-            )
+    
+        input_dim = self.emb_dim * 4 + 32
+        output_dim = self.n_hidden
+        heads = [self.n_heads] * (self.n_layers-1) + [1]
+        self.gat_layers = nn.ModuleList()
+        for i in range(self.n_layers):
+            activation = None if i == self.n_layers - 1 else self.relu
+            self.gat_layers.append(GATConv(
+                                            input_dim, 
+                                            output_dim, 
+                                            num_heads=heads[i], 
+                                            feat_drop=args.dropout, 
+                                            attn_drop=args.dropout, 
+                                            negative_slope=args.relu, 
+                                            residual=True, 
+                                            activation=activation, 
+                                            allow_zero_in_degree=True
+                                           ))
+            input_dim = output_dim * heads[i]
+            
+        self.fc_out = nn.Linear(self.n_hidden, 2)
         
     
     def forward(self, edge_sub, blocks, inputs_s, inputs_sm, inputs_c, inputs_co, inputs_sl, inputs_ip):
@@ -55,16 +61,22 @@ class GAT(nn.Module):
         ip_emb = inputs_ip.float()
         
         h = torch.cat([h, cat_emb, country_emb, sec_emb, ip_emb], dim=1)
-        for l, conv in enumerate(self.gat_convs):
-            h_new = conv(blocks[l], h_feat)
-            if l != self.n_layers - 1:
-                h_feat = h_new.flatten(1)
-                h_feat = self.dropout(h_feat)
+        
+        attn = None
+        for i, layer in enumerate(self.gat_layers):
+            if i == self.n_layers - 1:
+                h, attn = layer(blocks[i][('site','sim','site')], h, get_attention=True)
+                h = h.squeeze(1)
             else:
-                h_feat = h_new.squeeze(1)
-
-        src, dst = edge_sub.edges(order='eid')
-        src_h = h_feat[src]
-        dst_h = h_feat[dst]
-        scores = torch.sum(src_h * dst_h, dim=1)
-        return scores, None
+                h = layer(blocks[i][('site','sim','site')]  , h)
+                h = h.flatten(1)
+                h = self.relu(h)
+                h = self.dropout(h)
+        
+        src, dst = edge_sub.edges(etype='sim', order='eid')
+        h_src = h[src]
+        h_dst = h[dst]
+        e_feat = h_src * h_dst
+        scores = self.fc_out(e_feat)
+        
+        return scores, attn

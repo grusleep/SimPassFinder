@@ -5,3 +5,5 @@ from .early_stopping import *
 
 from .graph_sage import *
 from .mlp import *
+from .gcn import *
+from .gat import *

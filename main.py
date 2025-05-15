@@ -87,6 +87,12 @@ def train(args, device, dataset, logger):
         model = MLP(args).to(device)
     elif args.model == "graph_sage":    
         model = GraphSAGE(args).to(device)
+    elif args.model == "gcn":
+        model = GCN(args).to(device)
+    elif args.model == "gat":
+        model = GAT(args).to(device)
+    else:
+        raise ValueError(f"[!] Model {args.model} not supported")
     optimizer = torch.optim.Adam(model.parameters(), lr=float(args.max_lr))
     loss_fn = torch.nn.BCELoss()
     early_stopper = EarlyStopping(args)

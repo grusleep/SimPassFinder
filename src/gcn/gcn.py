@@ -71,7 +71,6 @@ class GCN(nn.Module):
             h = self.relu(h)
             h = self.dropout(h)
             h_dict[node_type] = h
-        print("GCN output sample:", h[:5])
 
 
         # 3. Edge-level prediction
