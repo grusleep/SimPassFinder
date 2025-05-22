@@ -43,6 +43,8 @@ class GraphSAGE(nn.Module):
                                     [SAGEConvN(self.n_hidden, self.n_hidden, aggregator_type=self.agg_type) for i in range(self.num_layers - 1)])
         self.conv_ip = nn.ModuleList([SAGEConvN(32, self.n_hidden, aggregator_type=self.agg_type)] + 
                                     [SAGEConvN(self.n_hidden, self.n_hidden, aggregator_type=self.agg_type) for i in range(self.num_layers - 1)])
+        # self.conv = nn.ModuleList([SAGEConvN(self.emb_dim*4+32, self.n_hidden, aggregator_type=self.agg_type)] + 
+        #                             [SAGEConvN(self.n_hidden, self.n_hidden, aggregator_type=self.agg_type) for i in range(self.num_layers - 1)])
         
         
         self.fc = nn.Linear(self.n_hidden*2, self.n_hidden)
@@ -84,32 +86,32 @@ class GraphSAGE(nn.Module):
         _vec_url = self.relu(_vec_url)
         _vec_url = self.dropout(_vec_url)
         vec_url = _vec_url
-    
         h1 = vec_url
+        h2 = vec_category
+        h3 = vec_country
+        h4 = vec_security_level
+        h5 = vec_ip
+    
         for i in range(self.num_layers):
             h1 = self.conv_s[i](blocks[i], h1)
             h1 = self.relu(h1)
             h1 = self.dropout(h1)
             
-        h2 = vec_category
         for i in range(self.num_layers):
             h2 = self.conv_c[i](blocks[i], h2)
             h2 = self.relu(h2)
             h2 = self.dropout(h2)
         
-        h3 = vec_country
         for i in range(self.num_layers):
             h3 = self.conv_co[i](blocks[i], h3)
             h3 = self.relu(h3)
             h3 = self.dropout(h3)
             
-        h4 = vec_security_level
         for i in range(self.num_layers):
             h4 = self.conv_sl[i](blocks[i], h4)
             h4 = self.relu(h4)
             h4 = self.dropout(h4)
             
-        h5 = vec_ip
         for i in range(self.num_layers):
             h5 = self.conv_ip[i](blocks[i], h5)
             h5 = self.relu(h5)
@@ -118,6 +120,14 @@ class GraphSAGE(nn.Module):
         h_stack = torch.stack([h1, h2, h3, h4, h5], dim=1)
         attn = self.softmax(self.attn(self.attn_linear(h_stack)))
         h = torch.sum((self.attn_linear(h_stack) * attn), dim=1)
+        
+        # h = torch.cat([h1, h2, h3, h4, h5], dim=1)
+        # for i in range(self.num_layers):
+        #     h = self.conv[i](blocks[i], h)
+        #     h = self.relu(h)
+        #     h = self.dropout(h)
+        # attn = self.softmax(self.attn(self.attn_linear(h)))
+        # h = torch.sum((self.attn_linear(h) * attn), dim=1)
         
         with edge_sub.local_scope():
             edge_sub.ndata['h'] = h

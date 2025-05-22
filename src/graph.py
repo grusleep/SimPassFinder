@@ -125,6 +125,44 @@ class CustomDataset():
             self.logger.print(f"[+] Saved edges to {edge_file}\n")
             
             
+    def set_edge_reuse(self, save=True):
+        self.edges = []
+        self.logger.print(f"[*] Start Setting edges")
+        
+        for i in range(len(self.nodes)):
+            self.logger.print(f"[*] Setting edges: {i:5} / {len(self.nodes):5}")
+            for j in range(i + 1, len(self.nodes)):
+                i_site = self.nodes[i]["site"]
+                j_site = self.nodes[j]["site"]
+                with open(os.path.join(self.dataset_path, "sites", f"{i_site}.json")) as f:
+                    i_data = json.load(f)
+                with open(os.path.join(self.dataset_path, "sites", f"{j_site}.json")) as f:
+                    j_data = json.load(f)
+                i_data_user_id = set(i_data.keys())
+                j_data_user_id = set(j_data.keys())
+                intersection = i_data_user_id & j_data_user_id
+                if len(intersection) == 0:
+                    continue
+                check = False
+                for user_id in intersection:
+                    if i_data[user_id] == j_data[user_id]:
+                        check = True
+                        break
+                if not check:
+                    continue
+                edge = {}
+                edge["node_1"] = i
+                edge["node_2"] = j
+                edge["weight"] = 1
+                self.edges.append(edge)
+                
+        if save:
+            edge_file = os.path.join(self.dataset_path, "graph", f"edges_reuse.json")
+            with open(edge_file, "w", encoding="utf-8") as f:
+                json.dump(self.edges, f, indent=4, ensure_ascii=False)
+            self.logger.print(f"[+] Saved edges to {edge_file}\n")
+            
+            
     def __encoding_node(self, node):
         encode_node = {}
         encode_node["site"] = [ord(c) for c in node["site"]]

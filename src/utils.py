@@ -28,6 +28,15 @@ def save_checkpoint(path, model, optimizer, valid_result):
         'optimizer_state_dict': optimizer.state_dict(),
         'valid_result': valid_result
     }, path)
+    
+
+def load_checkpoint(path, model, optimizer):
+    if path == None:
+        return
+    checkpoint = torch.load(path, weights_only=True)
+    model.load_state_dict(checkpoint['model_state_dict'])
+    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    return checkpoint['valid_result']
 
 
 def tqdm(*args, **kwargs):
@@ -39,7 +48,10 @@ class Logger:
     def __init__(self, args):
         self.model_name = args.model_name
         print(self.model_name)
-        self.log_path = os.path.join("log", args.setting, f"{self.model_name}.log")
+        if args.run_type == "train":
+            self.log_path = os.path.join("log", args.setting, f"{self.model_name}.log")
+        else:
+            self.log_path = os.path.join("log", args.setting, f"{self.model_name}_test.log")
         self.reset_log()
         
         

@@ -11,22 +11,28 @@ TOTAL_WIDTH = 50
 def init():
     parser = argparse.ArgumentParser(description="Parser for model configuration")
 
+    parser.add_argument('--run_type', type=str, default="train", help='run type: train/test')
     parser.add_argument('--dataset_path', type=str, required=True, help='dataset_path')
-    parser.add_argument('--setting', type=str, required=True, help='graph learning setting: inductive/transductive')
     parser.add_argument('--model_path', type=str, required=False, default="./model/", help='model grand path')
     parser.add_argument('--model_name', type=str, default="model", help='model folder name')
-    parser.add_argument('--agg_type', type=str, default="attn", help='aggregation type')
+
     parser.add_argument('--edge_thv', type=float, default=0.5, help='threshold for edge')
+    parser.add_argument('--setting', type=str, required=True, help='graph learning setting: inductive/transductive')
+    
+    
+    parser.add_argument('--random_seed', type=int, default=1, help='random seed for initialization')
     parser.add_argument('--valid', type=float, default=0.2, help='split ratio of validation set')
     parser.add_argument('--test', type=float, default=0.2, help='split ratio of test set')
+    
     parser.add_argument('--model', type=str, default="mlp", help='model type')
+    parser.add_argument('--agg_type', type=str, default="attn", help='aggregation type')
     parser.add_argument('--dropout', type=float, default=0.5, help='dropout ratio')
-    parser.add_argument('--random_seed', type=int, default=1, help='random seed for initialization')
     parser.add_argument('--relu', type=float, default=0.2, help='ReLU threshold')
     parser.add_argument('--batch_size', type=int, default=65536, help='batch size for training')
     parser.add_argument('--embed_size', type=int, default=256, help='size of the embedding layer')
     parser.add_argument('--hidden_size', type=int, default=256, help='size of the hidden layer')
     parser.add_argument('--gnn_depth', type=int, default=2, help='depth of the GNN')
+    
     parser.add_argument('--max_lr', type=float, default=0.001, help='maximum learning rate')
     parser.add_argument('--warmup', type=float, default=0.1, help='warmup ratio for learning rate')
     parser.add_argument('--max_epoch', type=int, default=1000, help='maximum number of epochs')
@@ -91,6 +97,7 @@ def train(args, device, dataset, logger):
         model = GCN(args).to(device)
     elif args.model == "gat":
         model = GAT(args).to(device)
+    
     else:
         raise ValueError(f"[!] Model {args.model} not supported")
     optimizer = torch.optim.Adam(model.parameters(), lr=float(args.max_lr))
@@ -155,10 +162,46 @@ def train(args, device, dataset, logger):
     test_result = evaluate(model, test_loader, test_nfeat, device)
     logger.print(f"[+] Test result | accuracy: {test_result['accuracy']:.4f} | f1-score: {test_result['macro avg']['f1-score']:.4f} | precision: {test_result['macro avg']['precision']:.4f} | recall: {test_result['macro avg']['recall']:.4f}")
     logger.print(f"[+] Done training\n\n")
+    
+    
+def test(args, device, dataset, logger):
+    logger.print("Testing".center(TOTAL_WIDTH, "="))
+    path = os.path.join(args.model_path, args.setting, args.model_name, "model_best.pth")
+    if not os.path.exists(path):
+        raise ValueError(f"[!] Model {path} not found")
+    
+    logger.print(f"[*] Loading model {path}")
+    if args.model == "mlp":
+        model = MLP(args).to(device)
+    elif args.model == "graph_sage":    
+        model = GraphSAGE(args).to(device)
+    elif args.model == "gcn":
+        model = GCN(args).to(device)
+    elif args.model == "gat":
+        model = GAT(args).to(device)
+    
+    optimizer = torch.optim.Adam(model.parameters(), lr=float(args.max_lr))
+    load_checkpoint(path, model, optimizer)
+    
+    logger.print(f"[*] Getting dataset loader")
+    test_loader = dataset.get_dataset_loader("test")
+    
+    if args.setting == "inductive":
+        test_nfeat = dataset.pop_node_feature("test")
+    elif args.setting == "transductive":
+        test_nfeat = dataset.pop_node_feature("train")
+    
+    logger.print(f"[*] Testing model")
+    test_result = evaluate(model, test_loader, test_nfeat, device)
+    logger.print(f"[+] Test result | accuracy: {test_result['accuracy']:.4f} | f1-score: {test_result['macro avg']['f1-score']:.4f} | precision: {test_result['macro avg']['precision']:.4f} | recall: {test_result['macro avg']['recall']:.4f}")
+    logger.print(f"[+] Done testing\n\n")
         
         
         
 if __name__ == "__main__":
     args, device, logger = init()
     dataset = init_dataset(args, device, logger)
-    train(args, device, dataset, logger)
+    if args.run_type == "train":
+        train(args, device, dataset, logger)
+    elif args.run_type == "test":
+        test(args, device, dataset, logger)
