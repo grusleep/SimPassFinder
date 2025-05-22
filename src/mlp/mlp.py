@@ -9,6 +9,7 @@ class MLP(nn.Module):
         super(MLP, self).__init__()
         self.emb_dim = args.embed_size
         self.n_hidden = args.hidden_size
+        self.feature = args.feature
         self.dropout = nn.Dropout(args.dropout)
         self.relu = nn.LeakyReLU(args.relu)
 
@@ -20,7 +21,18 @@ class MLP(nn.Module):
         self.lstm = nn.LSTM(self.emb_dim, self.emb_dim, batch_first=True, bidirectional=True)
         self.fc_lstm = nn.Linear(self.emb_dim * 2, self.emb_dim)
 
-        mlp_input_dim = self.emb_dim * 4 + 32
+        if self.feature == "all":
+            mlp_input_dim = self.emb_dim * 4 + 32
+        elif self.feature == "site":
+            mlp_input_dim = self.emd_dim
+        elif self.feature == "category":
+            mlp_input_dim = self.emb_dim
+        elif self.feature == "country":
+            mlp_input_dim = self.emb_dim
+        elif self.feature == "security_level":
+            mlp_input_dim = self.emb_dim
+        elif self.feature == "ip":
+            mlp_input_dim = 32
         self.mlp = nn.Sequential(
             nn.Linear(mlp_input_dim*2, self.n_hidden),
             nn.LeakyReLU(args.relu),
@@ -58,7 +70,18 @@ class MLP(nn.Module):
         sec_emb = self.embed_security_level(inputs_sl).squeeze(1)
         ip_emb = inputs_ip.float()
 
-        node_feat = torch.cat([h, cat_emb, country_emb, sec_emb, ip_emb], dim=1)
+        if self.feature == "all":
+            node_feat = torch.cat([h, cat_emb, country_emb, sec_emb, ip_emb], dim=1)
+        elif self.feature == "site":
+            node_feat = h
+        elif self.feature == "category":
+            node_feat = cat_emb
+        elif self.feature == "country":
+            node_feat = country_emb
+        elif self.feature == "security_level":
+            node_feat = sec_emb
+        elif self.feature == "ip":
+            node_feat = ip_emb
         src, dst = edge_sub.edges(etype='sim',order='eid')
         edge_feat = torch.cat([node_feat[src], node_feat[dst]], dim=1)
 
