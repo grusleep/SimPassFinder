@@ -5,6 +5,7 @@ import jellyfish
 import torch
 from torch.nn.utils.rnn import pad_sequence
 from sklearn.model_selection import train_test_split
+from sklearn.feature_selection import mutual_info_classif
 
 from .utils import *
 
@@ -350,18 +351,13 @@ class CustomDataset():
     
     def compute_node_edge_correlations(self):
         self.logger.print(f"[*] Start computing node-edge correlations")
-        for feat_name in ['site', 'category', 'country', 'security_level', 'ip']:
-            node_feat = self.graph.ndata[feat_name].float()  # shape [N]
+        edge_features = self.graph.edata['label'][('site', 'sim', 'site')]
+        
+        for feat_name in ['category', 'country', 'security_level']:
+            node_feat = self.graph.ndata[feat_name]
+            src, dst = self.graph.edges(etype='sim',order='eid')
+            x = torch.stack([node_feat[src], node_feat[dst]], dim=1)
+            
+            mi = mutual_info_classif(x, edge_features, discrete_features=[True, True], random_state=0)
 
-            # 예시: 각 edge의 source node feature를 사용
-            src, dst = self.graph.edges()
-            node_feat_edges = node_feat[src]  # shape [E]
-
-            # 두 벡터를 쌓아서 2×E 텐서로 만든 뒤
-            stacked = torch.stack([node_feat_edges, edge_features], dim=0)  # shape [2, E]
-
-            # corrcoef에 한 번에 넘기고, 상관행렬에서 [0,1] 값을 꺼냄
-            corr_matrix = torch.corrcoef(stacked)  # shape [2, 2]
-            corr = corr_matrix[0, 1]
-
-            self.logger.print(f"[+] {feat_name}-edge correlation: {corr:.4f}")
+            self.logger.print(f"[+] MI({feat_name} → edge) = {mi[0]:.4f}")
