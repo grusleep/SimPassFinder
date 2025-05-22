@@ -346,3 +346,22 @@ class CustomDataset():
         nfeat_ip = graph.ndata.pop('ip')
         
         return nfeat_s, nfeat_sm, nfeat_c, nfeat_co, nfeat_sl, nfeat_ip
+    
+    
+    def compute_node_edge_correlations(self):
+        self.logger.print(f"[*] Start computing node-edge correlations")
+        for feat_name in ['site', 'category', 'country', 'security_level', 'ip']:
+            node_feat = self.graph.ndata[feat_name].float()  # shape [N]
+
+            # 예시: 각 edge의 source node feature를 사용
+            src, dst = self.graph.edges()
+            node_feat_edges = node_feat[src]  # shape [E]
+
+            # 두 벡터를 쌓아서 2×E 텐서로 만든 뒤
+            stacked = torch.stack([node_feat_edges, edge_features], dim=0)  # shape [2, E]
+
+            # corrcoef에 한 번에 넘기고, 상관행렬에서 [0,1] 값을 꺼냄
+            corr_matrix = torch.corrcoef(stacked)  # shape [2, 2]
+            corr = corr_matrix[0, 1]
+
+            self.logger.print(f"[+] {feat_name}-edge correlation: {corr:.4f}")
