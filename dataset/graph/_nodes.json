@@ -1,0 +1,191 @@
+[
+    {
+        "site": "www.raas.com.au",
+        "category": "NoCategory",
+        "country": "AU",
+        "security_level": 1,
+        "ip": "43.250.142.98"
+    },
+    {
+        "site": "CSGameServs.Com",
+        "category": "NoCategory",
+        "country": "US",
+        "security_level": 0,
+        "ip": "154.197.142.218"
+    },
+    {
+        "site": "protonradio.com",
+        "category": "NoCategory",
+        "country": "US",
+        "security_level": 1,
+        "ip": "75.2.60.5"
+    },
+    {
+        "site": "Mylloyd.com",
+        "category": "NoCategory",
+        "country": "US",
+        "security_level": 1,
+        "ip": "151.101.65.124"
+    },
+    {
+        "site": "wipro.com",
+        "category": "NoCategory",
+        "country": "US",
+        "security_level": 2,
+        "ip": "18.205.78.10"
+    },
+    {
+        "site": "auction-warehouse.com",
+        "category": "NoCategory",
+        "country": "US",
+        "security_level": 0,
+        "ip": "148.72.155.179"
+    },
+    {
+        "site": "Mail.ru",
+        "category": "NoCategory",
+        "country": "RU",
+        "security_level": 0,
+        "ip": "217.69.139.200"
+    },
+    {
+        "site": "emkoelektronik.com.tr",
+        "category": "NoCategory",
+        "country": "TR",
+        "security_level": 1,
+        "ip": "46.20.5.234"
+    },
+    {
+        "site": "salalahport.com",
+        "category": "NoCategory",
+        "country": "OM",
+        "security_level": 1,
+        "ip": "5.37.56.44"
+    },
+    {
+        "site": "surgeryu.com",
+        "category": "NoCategory",
+        "country": "KR",
+        "security_level": 1,
+        "ip": "18.244.60.26"
+    },
+    {
+        "site": "Incorpore.co.uk",
+        "category": "NoCategory",
+        "country": "GB",
+        "security_level": 0,
+        "ip": "18.133.68.142"
+    },
+    {
+        "site": "equitydevelopment.co.uk",
+        "category": "NoCategory",
+        "country": "US",
+        "security_level": 1,
+        "ip": "199.60.103.254"
+    },
+    {
+        "site": "7k7k.com",
+        "category": "NoCategory",
+        "country": "CN",
+        "security_level": 0,
+        "ip": "106.75.33.163"
+    },
+    {
+        "site": "rootkit.com",
+        "category": "NoCategory",
+        "country": "US",
+        "security_level": 1,
+        "ip": "50.47.64.51"
+    },
+    {
+        "site": "tcs.com",
+        "category": "NoCategory",
+        "country": "IN",
+        "security_level": 2,
+        "ip": "4.247.162.6"
+    },
+    {
+        "site": "FunOfficePools.com",
+        "category": "NoCategory",
+        "country": "US",
+        "security_level": 1,
+        "ip": "208.76.83.107"
+    },
+    {
+        "site": "8teenxxx.com",
+        "category": "NoCategory",
+        "country": "US",
+        "security_level": 1,
+        "ip": "84.247.3.181"
+    },
+    {
+        "site": "tunesoman.com",
+        "category": "NoCategory",
+        "country": "US",
+        "security_level": 1,
+        "ip": "74.208.236.137"
+    },
+    {
+        "site": "gta5base.com",
+        "category": "NoCategory",
+        "country": "US",
+        "security_level": 1,
+        "ip": "69.16.230.165"
+    },
+    {
+        "site": "Gmail.com",
+        "category": "NoCategory",
+        "country": "JP",
+        "security_level": 0,
+        "ip": "142.250.76.133"
+    },
+    {
+        "site": "yandex.com",
+        "category": "NoCategory",
+        "country": "RU",
+        "security_level": 0,
+        "ip": "5.255.255.77"
+    },
+    {
+        "site": "combolist.co",
+        "category": "NoCategory",
+        "country": "US",
+        "security_level": 0,
+        "ip": "63.250.43.12"
+    },
+    {
+        "site": "theatrhall.com",
+        "category": "NoCategory",
+        "country": "DE",
+        "security_level": 0,
+        "ip": "135.125.235.45"
+    },
+    {
+        "site": "fijilive.com",
+        "category": "NoCategory",
+        "country": "US",
+        "security_level": 1,
+        "ip": "172.67.157.201"
+    },
+    {
+        "site": "1394store.com",
+        "category": "NoCategory",
+        "country": "NL",
+        "security_level": 0,
+        "ip": "77.247.179.90"
+    },
+    {
+        "site": "000webhost.com",
+        "category": "NoCategory",
+        "country": "US",
+        "security_level": 1,
+        "ip": "104.16.31.19"
+    },
+    {
+        "site": "YouPorn.com",
+        "category": "NoCategory",
+        "country": "US",
+        "security_level": 0,
+        "ip": "66.254.114.79"
+    }
+]
