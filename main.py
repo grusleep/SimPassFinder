@@ -18,8 +18,8 @@ def init():
 
     parser.add_argument('--edge_thv', type=float, default=0.5, help='threshold for edge')
     parser.add_argument('--setting', type=str, required=True, help='graph learning setting: inductive/transductive')
-    parser.add_argumnet('--feature', type=str, default="all", help='feature type: all/site/category/country/security_level/ip')
-    
+    parser.add_argument('--feature', type=str, default="all", help='feature type: all/site/category/country/sl/ip')
+    parser.add_argument("--edge_type", type=str, default="sim", help='edge type: sim/reuse')
     
     parser.add_argument('--random_seed', type=int, default=1, help='random seed for initialization')
     parser.add_argument('--valid', type=float, default=0.2, help='split ratio of validation set')

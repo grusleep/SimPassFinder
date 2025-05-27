@@ -22,6 +22,7 @@ class CustomDataset():
         self.device = device
         self.random_seed = args.random_seed
         self.batch_size = args.batch_size
+        self.edge_type = args.edge_type
         self.logger = logger
         self.load_category()
         self.load_country()
@@ -39,7 +40,13 @@ class CustomDataset():
     
     def load_edge(self):
         self.logger.print(f"[*] Loading edges")
-        with open(os.path.join(self.dataset_path, "graph", "edges.json"), "r") as f:
+        if self.edge_type == "reuse":
+            edge_file = os.path.join(self.dataset_path, "graph", "edges_reuse.json")
+        elif self.edge_type == "sim":
+            edge_file = os.path.join(self.dataset_path, "graph", "edges.json")
+        else:
+            raise ValueError(f"Unknown edge type: {self.edge_type}. Use 'sim' or 'reuse'.")
+        with open(edge_file, "r") as f:
             self.edges = json.load(f)
         self.logger.print(f"[+] Done loading edges")
         self.logger.print(f"[+] Number of edges: {len(self.edges)}\n")

@@ -24,12 +24,12 @@ class MLP(nn.Module):
         if self.feature == "all":
             mlp_input_dim = self.emb_dim * 4 + 32
         elif self.feature == "site":
-            mlp_input_dim = self.emd_dim
+            mlp_input_dim = self.emb_dim
         elif self.feature == "category":
             mlp_input_dim = self.emb_dim
         elif self.feature == "country":
             mlp_input_dim = self.emb_dim
-        elif self.feature == "security_level":
+        elif self.feature == "sl":
             mlp_input_dim = self.emb_dim
         elif self.feature == "ip":
             mlp_input_dim = 32
@@ -78,7 +78,7 @@ class MLP(nn.Module):
             node_feat = cat_emb
         elif self.feature == "country":
             node_feat = country_emb
-        elif self.feature == "security_level":
+        elif self.feature == "sl":
             node_feat = sec_emb
         elif self.feature == "ip":
             node_feat = ip_emb

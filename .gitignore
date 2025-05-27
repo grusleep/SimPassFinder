@@ -6,11 +6,13 @@ dataset/json/
 dataset/meta_data/
 dataset/NOHASH/
 dataset/sites/
+dataset/sites_old/
 !/dataset/dataset.txt
 .vscode/
 __pycache__/
 model/
-log/
+log/inductive/
+log/transductive/
 
 
 # Files
