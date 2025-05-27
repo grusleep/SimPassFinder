@@ -119,8 +119,18 @@ class DataProcessor:
             if data_type == "[NOHASH]" and len(txt_list) == 1:
                 if txt_list[0].endswith(".txt"):
                     f = open(os.path.join(self.dataset_path, file, txt_list[0]), "r", errors="ignore")
+                    data, site_sl = self.set_data(f)
+                else:
+                    try:
+                        txt_list = os.listdir(os.path.join(self.dataset_path, file, txt_list[0]))
+                        f = self.select_txt(txt_list)
+                        data, site_sl = self.set_data(f)
+                    except:
+                        del self.meta_data[url]
+                        continue
             elif data_type == "[HASH+NOHASH]":
                 count[len(txt_list)].append(url)
+                
             elif data_type == "[HASH]":
                 del self.meta_data[url]
                 continue
@@ -128,28 +138,47 @@ class DataProcessor:
                 del self.meta_data[url]
                 continue
             # self.logger.print(f"[*] Processing {i:5}/{site_num}")
-            self.set_data(f)
-        for line in self.lines:
-            self.logger.print(f"{line}")
         # for k, v in count.items():
         #     print(f"{count[k][0]}")
             
             
     def set_data(self, f):
         data = {}
+        site_sl = 10
         if f is None:
-            return data
+            return None, None
         for line in f:
             line = line.strip()
             if line == "":
                 continue
             if ":" not in line:
                 continue
-            if len(line.split(":")) != 2:
-                self.lines.append(line)
-            key, value = line.split(":", 1)
-            data[key.strip()] = value.strip()
-        return data
+            split = line.split(":")
+            if len(split) != 2:
+                if split[1] ==  split[2]:
+                    id, pwd = split[0], split[1]
+                elif "::" in line:
+                    split = line.split("::")
+                    if len(split) == 2:
+                        id, pwd = split[0], split[1]
+                    else:
+                        continue
+                else:
+                    continue
+            else:
+                id, pwd = line.split(":", 1)
+            if id.strip() == "" or pwd.strip() == "":
+                continue
+            pwd_sl = check_pwd_security_level(pwd.strip())
+            if pwd_sl < site_sl:
+                site_sl = pwd_sl
+            data[id.strip()] = pwd.strip()
+        return data, site_sl
+    
+    
+    def select_txt(self, txt_list):
+        pass
+        
         
         
 def init():

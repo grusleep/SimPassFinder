@@ -20,3 +20,4 @@ test.py
 *.tar.gz
 *.tgz
 *.sh
+*.txt
