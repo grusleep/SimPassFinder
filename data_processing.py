@@ -5,6 +5,7 @@ import socket
 import argparse
 import requests
 from urllib.parse import urlparse
+from pprint import pprint
 
 from src import *
 
@@ -13,7 +14,7 @@ from src import *
 class DataProcessor:
     def __init__(self, args, logger):
         self.dataset_path = "/mnt/d/Cit0day/Cit0day"
-        self.meta_data_path = "dataset/meta_data.json"
+        self.meta_data_path = "dataset/meta_data/"
         self.site_path = "dataset/sites"
         self.feature = args.feature
         self.file_list = os.listdir(self.dataset_path)
@@ -106,8 +107,7 @@ class DataProcessor:
         
         
     def set_sl(self):
-        count = {1: [], 2: [], 3: [], 4: [], 5: []}
-        self.lines = [] 
+        count = 0
         site_num = len(self.file_list)
         for i, file in enumerate(self.file_list):
             url = file.split(" ")[0]
@@ -116,30 +116,78 @@ class DataProcessor:
                 continue
             f = None
             txt_list = os.listdir(os.path.join(self.dataset_path, file))
-            if data_type == "[NOHASH]" and len(txt_list) == 1:
-                if txt_list[0].endswith(".txt"):
+            
+            if data_type == "[NOHASH]":
+                if len(txt_list) == 1 and txt_list[0].endswith(".txt"):
                     f = open(os.path.join(self.dataset_path, file, txt_list[0]), "r", errors="ignore")
                     data, site_sl = self.set_data(f)
+                    if data is None:
+                        continue
+                    f.close()
                 else:
                     try:
-                        txt_list = os.listdir(os.path.join(self.dataset_path, file, txt_list[0]))
-                        f = self.select_txt(txt_list)
-                        data, site_sl = self.set_data(f)
+                        data = {}
+                        site_sl = 10
+                        if len(txt_list) == 1:
+                            _file = txt_list[0]
+                            txt_list = os.listdir(os.path.join(self.dataset_path, file, _file))
+                        f_list = self.select_txt(txt_list, data_type=data_type)
+                        if len(f_list) == 0:
+                            continue
+                        for _f in f_list:
+                            f = open(os.path.join(self.dataset_path, file, _file,_f), "r", errors="ignore")
+                            _data, _site_sl = self.set_data(f)
+                            if _data is None:
+                                continue
+                            data.update(_data)
+                            if _site_sl < site_sl:
+                                site_sl = _site_sl
+                            f.close()
                     except:
-                        del self.meta_data[url]
                         continue
+                    
             elif data_type == "[HASH+NOHASH]":
-                count[len(txt_list)].append(url)
-                
+                if len(txt_list) == 1 and txt_list[0].endswith(".txt"):
+                    continue
+                else:
+                    try:
+                        data = {}
+                        site_sl = 10
+                        folder_path = os.path.join(self.dataset_path, file)
+                        if len(txt_list) == 1:
+                            _file = txt_list[0]
+                            txt_list = os.listdir(os.path.join(self.dataset_path, file, _file))
+                            folder_path = os.path.join(folder_path, _file)
+                        f_list = self.select_txt(txt_list, data_type=data_type)
+                        if len(f_list) == 0:
+                            continue
+                        for _f in f_list:
+                            f = open(os.path.join(folder_path, _f), "r", errors="ignore")
+                            _data, _site_sl = self.set_data(f)
+                            if _data is None:
+                                continue
+                            data.update(_data)
+                            if _site_sl < site_sl:
+                                site_sl = _site_sl
+                            f.close()
+                    except:
+                        continue
             elif data_type == "[HASH]":
                 del self.meta_data[url]
                 continue
             else:
                 del self.meta_data[url]
                 continue
-            # self.logger.print(f"[*] Processing {i:5}/{site_num}")
-        # for k, v in count.items():
-        #     print(f"{count[k][0]}")
+            if site_sl == 10:
+                del self.meta_data[url]
+                continue
+            with open(os.path.join(self.site_path, url + ".json"), "w") as f:
+                json.dump(data, f, indent=4)
+            
+            self.meta_data[url]["sl"] = site_sl
+            self.logger.print(f"[*] Processing {i:5}/{site_num}")
+        self.logger.print(f"[+] Done processing sites")
+        self.logger.print(f"[+] Sites: {len(self.meta_data)}")
             
             
     def set_data(self, f):
@@ -176,8 +224,15 @@ class DataProcessor:
         return data, site_sl
     
     
-    def select_txt(self, txt_list):
-        pass
+    def select_txt(self, txt_list, data_type="[NOHASH]"):
+        f_list = []
+        if len(txt_list) == 1 and data_type == "[NOHASH]":
+            f_list.append(txt_list[0])
+        else:
+            for txt in txt_list:
+                if "decrypted" in txt or "no hash" in txt or ("[NOHASH]" in txt and "[HASH]" not in txt) or "Result" in txt or "Rejected" in txt or "[nohash]" in txt or "good" in txt:
+                    f_list.append(txt)
+        return f_list
         
         
         
@@ -193,3 +248,4 @@ if __name__ == "__main__":
     processor = DataProcessor(args, logger)
     processor.load_meta_data()
     processor.set_sl()
+    processor.save_meta_data()

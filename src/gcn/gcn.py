@@ -16,7 +16,7 @@ class GCN(nn.Module):
         # Embedding layers for categorical features
         self.embed_category = nn.Embedding(26, self.emb_dim)
         self.embed_country = nn.Embedding(59, self.emb_dim)
-        self.embed_security_level = nn.Embedding(6, self.emb_dim)
+        self.embed_sl = nn.Embedding(6, self.emb_dim)
         self.embed_url = nn.Embedding(128, self.emb_dim)
 
         self.lstm = nn.LSTM(self.emb_dim, self.emb_dim, batch_first=True, bidirectional=True)
@@ -57,7 +57,7 @@ class GCN(nn.Module):
 
         h_cat = self.embed_category(inputs_c).squeeze(1)
         h_country = self.embed_country(inputs_co).squeeze(1)
-        h_sec = self.embed_security_level(inputs_sl).squeeze(1)
+        h_sec = self.embed_sl(inputs_sl).squeeze(1)
         h_ip = inputs_ip.float()
 
         h = torch.cat([h_url, h_cat, h_country, h_sec, h_ip], dim=1)

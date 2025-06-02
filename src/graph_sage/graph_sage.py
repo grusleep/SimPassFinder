@@ -23,7 +23,7 @@ class GraphSAGE(nn.Module):
         
         self.embed_category = nn.Embedding(26, self.emb_dim)
         self.embed_country = nn.Embedding(59, self.emb_dim)
-        self.embed_security_level = nn.Embedding(6, self.emb_dim)
+        self.embed_sl = nn.Embedding(6, self.emb_dim)
         
         self.embed_url = nn.Embedding(128, self.emb_dim)
         self.lstm = nn.LSTM(self.emb_dim, self.emb_dim, batch_first=True, bidirectional=True)
@@ -70,7 +70,7 @@ class GraphSAGE(nn.Module):
         
         vec_country = self.embed_country(inputs_co)
         
-        vec_security_level = self.embed_security_level(inputs_sl)
+        vec_sl = self.embed_sl(inputs_sl)
         
         vec_ip = inputs_ip
         
@@ -89,7 +89,7 @@ class GraphSAGE(nn.Module):
         h1 = vec_url
         h2 = vec_category
         h3 = vec_country
-        h4 = vec_security_level
+        h4 = vec_sl
         h5 = vec_ip
     
         for i in range(self.num_layers):

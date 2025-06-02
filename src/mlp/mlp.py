@@ -15,7 +15,7 @@ class MLP(nn.Module):
 
         self.embed_category = nn.Embedding(26, self.emb_dim)
         self.embed_country = nn.Embedding(59, self.emb_dim)
-        self.embed_security_level = nn.Embedding(6, self.emb_dim)
+        self.embed_sl = nn.Embedding(6, self.emb_dim)
         self.embed_url = nn.Embedding(128, self.emb_dim)
 
         self.lstm = nn.LSTM(self.emb_dim, self.emb_dim, batch_first=True, bidirectional=True)
@@ -67,7 +67,7 @@ class MLP(nn.Module):
 
         cat_emb = self.embed_category(inputs_c).squeeze(1)
         country_emb = self.embed_country(inputs_co).squeeze(1)
-        sec_emb = self.embed_security_level(inputs_sl).squeeze(1)
+        sec_emb = self.embed_sl(inputs_sl).squeeze(1)
         ip_emb = inputs_ip.float()
 
         if self.feature == "all":

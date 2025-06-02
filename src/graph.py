@@ -24,10 +24,7 @@ class CustomDataset():
         self.batch_size = args.batch_size
         self.edge_type = args.edge_type
         self.logger = logger
-        self.load_category()
-        self.load_country()
-        self.load_node()
-        # self.encoding_node()
+        self.num_thv = 30
         
         
     def load_meta_data(self):
@@ -78,31 +75,50 @@ class CustomDataset():
     
     def set_node(self, save=True):
         self.nodes = []
+        countries = set()
+        categories = set()
         self.logger.print(f"[*] Start Setting nodes")
+        required_keys = {'category', 'country', 'sl', 'ip'}
         
-        for site in tqdm(list(self.meta_data.keys()), desc="[*] Setting nodes"):
+        for site in list(self.meta_data.keys()):
+            if not required_keys.issubset(self.meta_data[site]): 
+                continue
             node = {}
             node["site"] = site
             node["category"] = self.meta_data[site]["category"]
             node["country"] = self.meta_data[site]["country"]
-            node["security_level"] = self.meta_data[site]["security_level"]
+            node["sl"] = self.meta_data[site]["sl"]
             node["ip"] = self.meta_data[site]["ip"]
             self.nodes.append(node)
+            countries.add(node["country"])
+            categories.add(node["category"])
+            self.logger.print(f"[*] Setting nodes: {len(self.nodes):5} / {len(self.meta_data):5} | {site}")
+
         self.logger.print(f"[+] Done setting nodes")
         self.logger.print(f"[+] Number of nodes: {len(self.nodes)}")
+        self.logger.print(f"[+] Number of countries: {len(countries)}")
+        self.logger.print(f"[+] Number of categories: {len(categories)}\n")
         
         if save:
             node_file = os.path.join(self.dataset_path, "graph", f"nodes.json")
             with open(node_file, "w", encoding="utf-8") as f:
                 json.dump(self.nodes, f, indent=4, ensure_ascii=False)
             self.logger.print(f"[+] Saved nodes to {node_file}")
+            countries_file = os.path.join(self.dataset_path, "graph", "countries.json")
+            with open(countries_file, "w", encoding="utf-8") as f:
+                json.dump(list(countries), f, indent=4, ensure_ascii=False)
+            self.logger.print(f"[+] Saved countries to {countries_file}")
+            categories_file = os.path.join(self.dataset_path, "graph", "categories.json")
+            with open(categories_file, "w", encoding="utf-8") as f:
+                json.dump(list(categories), f, indent=4, ensure_ascii=False)
+            self.logger.print(f"[+] Saved categories to {categories_file}\n")
         
         
     def set_edge(self, save=True):
-        self.edges = []
+        # self.edges = []
         self.logger.print(f"[*] Start Setting edges")
         
-        for i in tqdm(range(len(self.nodes)), desc="[*] Setting edges"):
+        for i in range(len(self.nodes)):
             for j in range(i + 1, len(self.nodes)):
                 i_site = self.nodes[i]["site"]
                 j_site = self.nodes[j]["site"]
@@ -113,24 +129,28 @@ class CustomDataset():
                 i_data_user_id = set(i_data.keys())
                 j_data_user_id = set(j_data.keys())
                 intersection = i_data_user_id & j_data_user_id
-                if len(intersection) == 0:
-                    continue
-                pwd_sim = []
-                for user_id in intersection:
-                    pwd_sim.append(jellyfish.jaro_similarity(i_data[user_id], j_data[user_id]))
-                weight = sum(pwd_sim) / len(pwd_sim)
-    
-                edge = {}
-                edge["node_1"] = i
-                edge["node_2"] = j
-                edge["weight"] = weight
-                self.edges.append(edge)
+                if len(intersection) >= self.num_thv:
+                    pwd_sim = []
+                    for user_id in intersection:
+                        pwd_sim.append(jellyfish.jaro_similarity(i_data[user_id], j_data[user_id]))
+                    weight = sum(pwd_sim) / len(pwd_sim)
         
-        if save:
-            edge_file = os.path.join(self.dataset_path, "graph", f"edges.json")
-            with open(edge_file, "w", encoding="utf-8") as f:
-                json.dump(self.edges, f, indent=4, ensure_ascii=False)
-            self.logger.print(f"[+] Saved edges to {edge_file}\n")
+                    edge = {}
+                    edge["node_1"] = i
+                    edge["node_2"] = j
+                    edge["weight"] = weight
+                    with open(os.path.join(self.dataset_path, "graph", f"edges.txt"), "a", encoding="utf-8") as f:
+                        f.write(f"{i} {j} {weight}\n")
+                self.logger.print(f"[*] Setting edges: {i:5} / {len(self.nodes)} | {i:5} - {j:5}")
+        
+        self.logger.print(f"[+] Done setting edges")
+        self.logger.print(f"[+] Number of edges: {len(self.edges)}")
+        
+        # if save:
+        #     edge_file = os.path.join(self.dataset_path, "graph", f"edges.json")
+        #     with open(edge_file, "w", encoding="utf-8") as f:
+        #         json.dump(self.edges, f, indent=4, ensure_ascii=False)
+        #     self.logger.print(f"[+] Saved edges to {edge_file}\n")
             
             
     def set_edge_reuse(self, save=True):
@@ -149,7 +169,7 @@ class CustomDataset():
                 i_data_user_id = set(i_data.keys())
                 j_data_user_id = set(j_data.keys())
                 intersection = i_data_user_id & j_data_user_id
-                if len(intersection) == 0:
+                if len(intersection) < self.num_thv:
                     continue
                 check = False
                 for user_id in intersection:
@@ -164,6 +184,9 @@ class CustomDataset():
                 edge["weight"] = 1
                 self.edges.append(edge)
                 
+        self.logger.print(f"[+] Done setting edges")
+        self.logger.print(f"[+] Number of edges: {len(self.edges)}")
+        
         if save:
             edge_file = os.path.join(self.dataset_path, "graph", f"edges_reuse.json")
             with open(edge_file, "w", encoding="utf-8") as f:
@@ -176,7 +199,7 @@ class CustomDataset():
         encode_node["site"] = [ord(c) for c in node["site"]]
         encode_node["category"] = self.categories.index(node["category"])
         encode_node["country"] = self.countries.index(node["country"])
-        encode_node["security_level"] = node["security_level"]
+        encode_node["sl"] = node["sl"]
         bit_strs = [f"{int(octet):08b}" for octet in node["ip"].split(".")]
         encode_node["ip"] = [float(bit)
                             for byte in bit_strs
@@ -192,7 +215,7 @@ class CustomDataset():
             node["site"] = encode_node["site"]
             node["category"] = encode_node["category"]
             node["country"] = encode_node["country"]
-            node["security_level"] = encode_node["security_level"]
+            node["sl"] = encode_node["sl"]
             node["ip"] = encode_node["ip"]
         self.logger.print(f"[+] Done encoding nodes\n")
     
@@ -217,7 +240,7 @@ class CustomDataset():
         self.graph.ndata["site_mask"] = mask
         self.graph.ndata["category"] = torch.tensor([node["category"] for node in self.nodes])
         self.graph.ndata["country"] = torch.tensor([node["country"] for node in self.nodes])
-        self.graph.ndata["security_level"] = torch.tensor([node["security_level"] for node in self.nodes])
+        self.graph.ndata["sl"] = torch.tensor([node["sl"] for node in self.nodes])
         self.graph.ndata["ip"] = torch.tensor([node["ip"] for node in self.nodes])
         
         sim_etype = ("site", "sim", "site")
@@ -350,7 +373,7 @@ class CustomDataset():
         nfeat_sm = graph.ndata.pop('site_mask')
         nfeat_c = graph.ndata.pop('category')
         nfeat_co = graph.ndata.pop('country')
-        nfeat_sl = graph.ndata.pop('security_level')
+        nfeat_sl = graph.ndata.pop('sl')
         nfeat_ip = graph.ndata.pop('ip')
         
         return nfeat_s, nfeat_sm, nfeat_c, nfeat_co, nfeat_sl, nfeat_ip
@@ -360,7 +383,7 @@ class CustomDataset():
         self.logger.print(f"[*] Start computing node-edge correlations")
         edge_features = self.graph.edata['label'][('site', 'sim', 'site')]
         
-        for feat_name in ['category', 'country', 'security_level']:
+        for feat_name in ['category', 'country', 'sl']:
             node_feat = self.graph.ndata[feat_name]
             src, dst = self.graph.edges(etype='sim',order='eid')
             x = torch.stack([node_feat[src], node_feat[dst]], dim=1)

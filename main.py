@@ -38,7 +38,7 @@ def init():
     parser.add_argument('--warmup', type=float, default=0.1, help='warmup ratio for learning rate')
     parser.add_argument('--max_epoch', type=int, default=1000, help='maximum number of epochs')
     parser.add_argument('--early_stop', type=int, default=50, help='early stopping epochs')
-    parser.add_argument('--min_delta', type=float, default=1e-4, help='early stopping epochs')
+    parser.add_argument('--min_delta', type=float, default=1e-4, help='minimum delta')
 
     args = parser.parse_args()
     logger = Logger(args)
@@ -57,6 +57,8 @@ def init():
 def init_dataset(args, device, logger):
     logger.print("Initializing Dataset".center(TOTAL_WIDTH, "="))
     graph = CustomDataset(args, device, logger)
+    graph.load_category()
+    graph.load_country()
     graph.load_node()
     graph.load_edge()
     graph.encoding_node()
@@ -64,6 +66,15 @@ def init_dataset(args, device, logger):
     graph.split()
     logger.print("")
     return graph
+
+
+def set_graph(args, device, logger):
+    logger.print("Setting Graph".center(TOTAL_WIDTH, "="))
+    graph = CustomDataset(args, device, logger)
+    graph.load_meta_data()
+    graph.load_node()
+    graph.set_edge()
+    graph.set_edge_reuse()
 
 
 def train(args, device, dataset, logger):
@@ -201,8 +212,9 @@ def test(args, device, dataset, logger):
         
 if __name__ == "__main__":
     args, device, logger = init()
-    dataset = init_dataset(args, device, logger)
-    if args.run_type == "train":
-        train(args, device, dataset, logger)
-    elif args.run_type == "test":
-        test(args, device, dataset, logger)
+    set_graph(args, device, logger)
+    # dataset = init_dataset(args, device, logger)
+    # if args.run_type == "train":
+    #     train(args, device, dataset, logger)
+    # elif args.run_type == "test":
+    #     test(args, device, dataset, logger)
