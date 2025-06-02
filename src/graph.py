@@ -25,6 +25,7 @@ class CustomDataset():
         self.edge_type = args.edge_type
         self.logger = logger
         self.num_thv = 30
+        self.data_type = "old"
         
         
     def load_meta_data(self):
@@ -40,7 +41,11 @@ class CustomDataset():
         if self.edge_type == "reuse":
             edge_file = os.path.join(self.dataset_path, "graph", "edges_reuse.json")
         elif self.edge_type == "sim":
-            edge_file = os.path.join(self.dataset_path, "graph", "edges.json")
+            if self.data_type is not None:
+                edge_file = os.path.join(self.dataset_path, "graph", f"edges_{self.data_type}.json")
+            else:
+                
+                edge_file = os.path.join(self.dataset_path, "graph", "edges.json")
         else:
             raise ValueError(f"Unknown edge type: {self.edge_type}. Use 'sim' or 'reuse'.")
         with open(edge_file, "r") as f:
@@ -51,7 +56,11 @@ class CustomDataset():
 
     def load_node(self):
         self.logger.print(f"[*] Loading nodes")
-        with open(os.path.join(self.dataset_path, "graph", f"nodes.json"), "r") as f:
+        if self.data_type is not None:
+            node_file = os.path.join(self.dataset_path, "graph", f"nodes_{self.data_type}.json")
+        else:
+            node_file = os.path.join(self.dataset_path, "graph", f"nodes.json")
+        with open(node_file, "r") as f:
             self.nodes = json.load(f)
         self.logger.print(f"[+] Done loading nodes")
         self.logger.print(f"[+] Number of nodes: {len(self.nodes)}\n")
@@ -59,7 +68,11 @@ class CustomDataset():
     
     def load_country(self):
         self.logger.print(f"[*] Loading countries")
-        with open(os.path.join(self.dataset_path, "graph", "countries.json"), "r") as f:
+        if self.data_type is not None:
+            country_file = os.path.join(self.dataset_path, "graph", f"countries_{self.data_type}.json")
+        else:
+            country_file = os.path.join(self.dataset_path, "graph", "countries.json")
+        with open(country_file, "r") as f:
             self.countries = json.load(f)
         self.logger.print(f"[+] Done loading countries")
         self.logger.print(f"[+] Number of countries: {len(self.countries)}\n")
@@ -67,7 +80,11 @@ class CustomDataset():
     
     def load_category(self):
         self.logger.print(f"[*] Loading categories")
-        with open(os.path.join(self.dataset_path, "graph", "categories.json"), "r") as f:
+        if self.data_type is not None:
+            category_file = os.path.join(self.dataset_path, "graph", f"categories_{self.data_type}.json")
+        else:
+            category_file = os.path.join(self.dataset_path, "graph", "categories.json")
+        with open(category_file, "r") as f:
             self.categories = json.load(f)
         self.logger.print(f"[+] Done loading categories")
         self.logger.print(f"[+] Number of categories: {len(self.categories)}\n")

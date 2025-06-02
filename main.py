@@ -154,7 +154,7 @@ def train(args, device, dataset, logger):
         valid_loss = total_loss / len(valid_loader)
         valid_loss_list.append(valid_loss)
         
-        valid_result = evaluate(model, valid_loader, valid_nfeat, device)
+        valid_result, _, _, _ = evaluate(model, valid_loader, valid_nfeat, device)
         result_list.append(valid_result)
         f1_score = valid_result['macro avg']['f1-score']
         f1_list.append(f1_score)
@@ -171,7 +171,7 @@ def train(args, device, dataset, logger):
         if early_stopper.early_stop:
             logger.print(f"[*] Early stopping at epoch {epoch}")
             break
-    test_result = evaluate(model, test_loader, test_nfeat, device)
+    test_result, _, _, _ = evaluate(model, test_loader, test_nfeat, device)
     logger.print(f"[+] Test result | accuracy: {test_result['accuracy']:.4f} | f1-score: {test_result['macro avg']['f1-score']:.4f} | precision: {test_result['macro avg']['precision']:.4f} | recall: {test_result['macro avg']['recall']:.4f}")
     logger.print(f"[+] Done training\n\n")
     
@@ -204,7 +204,7 @@ def test(args, device, dataset, logger):
         test_nfeat = dataset.pop_node_feature("train")
     
     logger.print(f"[*] Testing model")
-    test_result = evaluate(model, test_loader, test_nfeat, device)
+    test_result, _, _, _ = evaluate(model, test_loader, test_nfeat, device)
     logger.print(f"[+] Test result | accuracy: {test_result['accuracy']:.4f} | f1-score: {test_result['macro avg']['f1-score']:.4f} | precision: {test_result['macro avg']['precision']:.4f} | recall: {test_result['macro avg']['recall']:.4f}")
     logger.print(f"[+] Done testing\n\n")
         
@@ -212,9 +212,11 @@ def test(args, device, dataset, logger):
         
 if __name__ == "__main__":
     args, device, logger = init()
-    set_graph(args, device, logger)
-    # dataset = init_dataset(args, device, logger)
-    # if args.run_type == "train":
-    #     train(args, device, dataset, logger)
-    # elif args.run_type == "test":
-    #     test(args, device, dataset, logger)
+    if args.run_type == "set_graph":
+        set_graph(args, device, logger)
+        exit(0)
+    dataset = init_dataset(args, device, logger)
+    if args.run_type == "train":
+        train(args, device, dataset, logger)
+    elif args.run_type == "test":
+        test(args, device, dataset, logger)

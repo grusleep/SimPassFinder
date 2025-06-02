@@ -28,6 +28,7 @@ def load_subtensor(nfeat_s, nfeat_sm, nfeat_c, nfeat_co, nfeat_sl, nfeat_ip, edg
 def evaluate(model, data_loader, nfeat, device='cpu'):
     y_true = []
     y_pred = []
+    nodes = []
     
     model.eval()
     with torch.no_grad():
@@ -40,10 +41,12 @@ def evaluate(model, data_loader, nfeat, device='cpu'):
             batch_pred, attn = model(edge_sub, blocks, *batch_inputs)
 
             preds = batch_pred.argmax(dim=1)
+            # print(batch_inputs[0])
         
             y_true.extend(batch_labels.detach().cpu().long().tolist())
             y_pred.extend(preds.detach().cpu().long().tolist())
+            
         
     result = classification_report(y_true, y_pred, digits=4, output_dict=True, zero_division=0)
     model.train()
-    return result
+    return result, nodes, y_true, y_pred
