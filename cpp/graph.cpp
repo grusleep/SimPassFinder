@@ -9,16 +9,12 @@
 #include <algorithm>
 #include <random>
 
-#include <dgl/graph.h>            // Placeholder for DGL C++ API
-#include <torch/torch.h>          // LibTorch for tensor operations
 #include <nlohmann/json.hpp>      // For JSON parsing
-#include <jellyfish/jaro_winkler.hpp> // Hypothetical C++ binding for jellyfish
-#include <sklearn/model_selection.hpp> // Hypothetical C++ binding
-#include <sklearn/feature_selection.hpp> // Hypothetical C++ binding
+#include <jellyfish/jaro_winkler.hpp>
 
 using json = nlohmann::json;
-using namespace dgl;
-using namespace torch;
+
+
 
 struct Args {
     std::string dataset_path;
@@ -48,37 +44,6 @@ public:
           num_thv_(30),
           data_type_("old") {}
 
-    void load_meta_data() {
-        std::cout << "[*] Loading meta data" << std::endl;
-        std::ifstream f(dataset_path_ + "/meta_data/meta_data.json");
-        json j;
-        f >> j;
-        meta_data_ = j;
-        std::cout << "[+] Done loading meta data" << std::endl;
-        std::cout << "[+] Number of sites: " << meta_data_.size() << std::endl;
-    }
-
-    void load_edge() {
-        std::cout << "[*] Loading edges" << std::endl;
-        std::string edge_file;
-        if (edge_type_ == "reuse") {
-            edge_file = dataset_path_ + "/graph/edges_reuse.json";
-        } else if (edge_type_ == "sim") {
-            if (!data_type_.empty()) {
-                edge_file = dataset_path_ + "/graph/edges_" + data_type_ + ".json";
-            } else {
-                edge_file = dataset_path_ + "/graph/edges.json";
-            }
-        } else {
-            throw std::runtime_error("Unknown edge type: " + edge_type_);
-        }
-        std::ifstream f(edge_file);
-        json j;
-        f >> j;
-        edges_ = j;
-        std::cout << "[+] Done loading edges" << std::endl;
-        std::cout << "[+] Number of edges: " << edges_.size() << std::endl;
-    }
 
     void load_node() {
         std::cout << "[*] Loading nodes" << std::endl;
@@ -96,91 +61,10 @@ public:
         std::cout << "[+] Number of nodes: " << nodes_.size() << std::endl;
     }
 
-    void load_country() {
-        std::cout << "[*] Loading countries" << std::endl;
-        std::string country_file;
-        if (!data_type_.empty()) {
-            country_file = dataset_path_ + "/graph/countries_" + data_type_ + ".json";
-        } else {
-            country_file = dataset_path_ + "/graph/countries.json";
-        }
-        std::ifstream f(country_file);
-        json j;
-        f >> j;
-        countries_ = j;
-        std::cout << "[+] Done loading countries" << std::endl;
-        std::cout << "[+] Number of countries: " << countries_.size() << std::endl;
-    }
-
-    void load_category() {
-        std::cout << "[*] Loading categories" << std::endl;
-        std::string category_file;
-        if (!data_type_.empty()) {
-            category_file = dataset_path_ + "/graph/categories_" + data_type_ + ".json";
-        } else {
-            category_file = dataset_path_ + "/graph/categories.json";
-        }
-        std::ifstream f(category_file);
-        json j;
-        f >> j;
-        categories_ = j;
-        std::cout << "[+] Done loading categories" << std::endl;
-        std::cout << "[+] Number of categories: " << categories_.size() << std::endl;
-    }
-
-    void set_node(bool save = true) {
-        nodes_list_.clear();
-        std::unordered_set<std::string> countries;
-        std::unordered_set<std::string> categories;
-        std::cout << "[*] Start Setting nodes" << std::endl;
-        const std::set<std::string> required_keys = {"category", "country", "sl", "ip"};
-
-        for (auto& [site, info] : meta_data_.items()) {
-            bool ok = true;
-            for (auto& key : required_keys) {
-                if (!info.contains(key)) { ok = false; break; }
-            }
-            if (!ok) continue;
-            json node;
-            node["site"] = site;
-            node["category"] = info["category"];
-            node["country"] = info["country"];
-            node["sl"] = info["sl"];
-            node["ip"] = info["ip"];
-            nodes_list_.push_back(node);
-            countries.insert(info["country"].get<std::string>());
-            categories.insert(info["category"].get<std::string>());
-            std::cout << "[*] Setting nodes: " << nodes_list_.size() << " / " << meta_data_.size() << " | " << site << std::endl;
-        }
-
-        std::cout << "[+] Done setting nodes" << std::endl;
-        std::cout << "[+] Number of nodes: " << nodes_list_.size() << std::endl;
-        std::cout << "[+] Number of countries: " << countries.size() << std::endl;
-        std::cout << "[+] Number of categories: " << categories.size() << std::endl;
-
-        if (save) {
-            std::ofstream f1(dataset_path_ + "/graph/nodes.json");
-            json j1 = nodes_list_;
-            f1 << j1.dump(4);
-            std::cout << "[+] Saved nodes to " << dataset_path_ + "/graph/nodes.json" << std::endl;
-
-            std::ofstream f2(dataset_path_ + "/graph/countries.json");
-            json j2 = json::array();
-            for (auto& c : countries) j2.push_back(c);
-            f2 << j2.dump(4);
-            std::cout << "[+] Saved countries to " << dataset_path_ + "/graph/countries.json" << std::endl;
-
-            std::ofstream f3(dataset_path_ + "/graph/categories.json");
-            json j3 = json::array();
-            for (auto& c : categories) j3.push_back(c);
-            f3 << j3.dump(4);
-            std::cout << "[+] Saved categories to " << dataset_path_ + "/graph/categories.json" << std::endl;
-        }
-    }
 
     void set_edge(bool save = true) {
         std::cout << "[*] Start Setting edges" << std::endl;
-        std::ofstream fout(dataset_path_ + "/graph/edges.txt", std::ios::app);
+        std::ofstream fout(dataset_path_ + "/graph/edges_cpp.txt", std::ios::app);
 
         for (size_t i = 0; i < nodes_list_.size(); ++i) {
             for (size_t j = i + 1; j < nodes_list_.size(); ++j) {
@@ -218,7 +102,6 @@ public:
 
         std::cout << "[+] Done setting edges" << std::endl;
         std::cout << "[+] Number of edges: " << edges_.size() << std::endl;
-        // Saving of edges.json is commented out in Python version
     }
 
     void set_edge_reuse(bool save = true) {
@@ -273,24 +156,5 @@ public:
     }
 
 private:
-    std::string dataset_path_;
-    double edge_thv_;
-    std::string splitting_type_;
-    double valid_;
-    double test_;
-    int gnn_depth_;
-    torch::Device device_;
-    int random_seed_;
-    int batch_size_;
-    std::string edge_type_;
-    int num_thv_;
-    std::string data_type_;
-
-    json meta_data_;
-    json edges_;
-    json nodes_;
-    json countries_;
-    json categories_;
-    std::vector<json> nodes_list_;
-    std::vector<json> edges_list_;
+    
 };
