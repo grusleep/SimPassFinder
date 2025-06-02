@@ -11,8 +11,6 @@ dataset/sites_old/
 .vscode/
 __pycache__/
 model/
-log/inductive/
-log/transductive/
 
 
 # Files
@@ -21,3 +19,4 @@ test.py
 *.tgz
 *.sh
 *.txt
+*.log
