@@ -73,8 +73,8 @@ def set_graph(args, device, logger):
     graph = CustomDataset(args, device, logger)
     graph.load_meta_data()
     graph.load_node()
-    graph.set_edge()
-    graph.set_edge_reuse()
+    # graph.set_edge()
+    graph.txt_to_json("edges")
 
 
 def train(args, device, dataset, logger):

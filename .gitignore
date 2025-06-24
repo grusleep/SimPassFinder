@@ -1,13 +1,5 @@
 # Folders
-dataset/collection/
-dataset/extract/
-dataset/HASH+NOHASH/
-dataset/json/
-dataset/meta_data/
-dataset/NOHASH/
-dataset/sites/
-dataset/sites_old/
-!/dataset/dataset.txt
+dataset/
 .vscode/
 __pycache__/
 model/

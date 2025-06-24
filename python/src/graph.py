@@ -25,7 +25,7 @@ class CustomDataset():
         self.edge_type = args.edge_type
         self.logger = logger
         self.num_thv = 30
-        self.data_type = "old"
+        self.data_type = None
         
         
     def load_meta_data(self):
@@ -131,12 +131,14 @@ class CustomDataset():
             self.logger.print(f"[+] Saved categories to {categories_file}\n")
         
         
-    def set_edge(self, save=True):
+    def set_edge(self, save=True, start_i=1892, start_j=7500):
         # self.edges = []
         self.logger.print(f"[*] Start Setting edges")
         
-        for i in range(len(self.nodes)):
-            for j in range(i + 1, len(self.nodes)):
+        for i in range(start_i, len(self.nodes)):
+            if i != start_i:
+                start_j = i+1
+            for j in range(start_j, len(self.nodes)):
                 i_site = self.nodes[i]["site"]
                 j_site = self.nodes[j]["site"]
                 with open(os.path.join(self.dataset_path, "sites", f"{i_site}.json")) as f:
@@ -161,13 +163,42 @@ class CustomDataset():
                 self.logger.print(f"[*] Setting edges: {i:5} / {len(self.nodes)} | {i:5} - {j:5}")
         
         self.logger.print(f"[+] Done setting edges")
-        self.logger.print(f"[+] Number of edges: {len(self.edges)}")
         
         # if save:
         #     edge_file = os.path.join(self.dataset_path, "graph", f"edges.json")
         #     with open(edge_file, "w", encoding="utf-8") as f:
         #         json.dump(self.edges, f, indent=4, ensure_ascii=False)
         #     self.logger.print(f"[+] Saved edges to {edge_file}\n")
+        
+        
+    def txt_to_json(self, file):
+        self.logger.print(f"[*] Converting {file} to json")
+        self.edges = []
+        with open(os.path.join(self.dataset_path, "graph", f"{file}.txt"), "r") as f:
+            lines = f.readlines()
+
+        total_lines = len(lines)
+        
+        for line in lines:
+            line = line.strip()
+            if line == "":
+                continue
+            split = line.split(" ")
+            if len(split) != 3:
+                continue
+            node_1, node_2, weight = split
+            edge = {}
+            edge["node_1"] = int(node_1)
+            edge["node_2"] = int(node_2)
+            edge["weight"] = float(weight)
+            self.edges.append(edge) 
+            
+            self.logger.print(f"[*] Converting edges: {len(self.edges):5} / {total_lines:5} | {node_1:5} - {node_2:5} | weight: {weight}")   
+                
+        with open(os.path.join(self.dataset_path, "graph", file.replace(".txt", ".json")), "w", encoding="utf-8") as f:
+            json.dump(self.edges, f, indent=4, ensure_ascii=False)
+        self.logger.print(f"[+] Done converting {file} to json")
+        self.logger.print(f"[+] Number of edges: {len(self.edges)}")
             
             
     def set_edge_reuse(self, save=True):
