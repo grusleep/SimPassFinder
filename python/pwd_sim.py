@@ -85,26 +85,24 @@ class PasswordSimilarity:
         
     def union_users_file(self, file1, file2, output_file):
         self.logger.print(f"[*] Union users from {file1} and {file2}")
-        with open(os.path.join(self.dataset_path, "users", file1), "r") as f1, \
-             open(os.path.join(self.dataset_path, "users", file2), "r") as f2:
+        with open(os.path.join(self.dataset_path, "users", file1), "r") as f1:
             data1 = json.load(f1)
+        self.logger.print(f"[+] Loaded {len(data1)} users from {file1}")
+        with open(os.path.join(self.dataset_path, "users", file2), "r") as f2:
             data2 = json.load(f2)
-        user1 = set(data1.keys())
+        self.logger.print(f"[+] Loaded {len(data2)} users from {file2}")
+        exit()
         user2 = set(data2.keys())
-        common_users = user1.union(user2)
-        data = {}
-        len_common = len(common_users)
-        for i, user in enumerate(common_users):
+        len_common = len(user2)
+        for i, user in enumerate(user2):
             if user not in data1:
-                data[user] = data2[user]["data"]
-            elif user not in data2:
-                data[user] = data1[user]["data"]
+                data1[user] = data2[user]
             else:
-                data[user] = data1[user]["data"] + data2[user]["data"]
+                data1[user] = data1[user] + data2[user]
             if i != 0 and i % 100000 == 0:
                 self.logger.print(f"[*] Processing user: {i:9} / {len_common:9}")
         with open(os.path.join(self.dataset_path, "users", output_file), "w") as f:
-            json.dump(data, f, indent=4)
+            json.dump(data1, f, indent=4)
         self.logger.print(f"[+] Union done, saved to {output_file}")
         
         
@@ -180,5 +178,5 @@ if __name__ == "__main__":
     logger = Logger(args)
     processor = PasswordSimilarity(args, logger)
     processor.load_node()
-    processor.union_users_file("users_5000.json", "users_6000.json", "users_5_6.json")
+    processor.union_users_file("users_1_8.json", "users_9_10_11_12.json", "users_all.json")
     

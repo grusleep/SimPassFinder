@@ -1,5 +1,0 @@
-rarfile
-tqdm
-torch==2.4
-scikit-learn
-jellyfish

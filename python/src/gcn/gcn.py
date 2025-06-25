@@ -14,8 +14,8 @@ class GCN(nn.Module):
         self.num_layers = args.gnn_depth
 
         # Embedding layers for categorical features
-        self.embed_category = nn.Embedding(26, self.emb_dim)
-        self.embed_country = nn.Embedding(59, self.emb_dim)
+        self.embed_category = nn.Embedding(101, self.emb_dim)
+        self.embed_country = nn.Embedding(92, self.emb_dim)
         self.embed_sl = nn.Embedding(6, self.emb_dim)
         self.embed_url = nn.Embedding(128, self.emb_dim)
 

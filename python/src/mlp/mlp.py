@@ -13,8 +13,8 @@ class MLP(nn.Module):
         self.dropout = nn.Dropout(args.dropout)
         self.relu = nn.LeakyReLU(args.relu)
 
-        self.embed_category = nn.Embedding(26, self.emb_dim)
-        self.embed_country = nn.Embedding(59, self.emb_dim)
+        self.embed_category = nn.Embedding(101, self.emb_dim)
+        self.embed_country = nn.Embedding(92, self.emb_dim)
         self.embed_sl = nn.Embedding(6, self.emb_dim)
         self.embed_url = nn.Embedding(128, self.emb_dim)
 
@@ -36,7 +36,7 @@ class MLP(nn.Module):
         self.mlp = nn.Sequential(
             nn.Linear(mlp_input_dim*2, self.n_hidden),
             nn.LeakyReLU(args.relu),
-            nn.Dropout(args.dropout),
+            # nn.Dropout(args.dropout),
             nn.Linear(self.n_hidden, self.n_hidden),
             nn.LeakyReLU(args.relu),
             nn.Dropout(args.dropout),

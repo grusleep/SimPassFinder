@@ -11,4 +11,5 @@ test.py
 *.tgz
 *.sh
 *.txt
+!CMakeLists.txt
 *.log

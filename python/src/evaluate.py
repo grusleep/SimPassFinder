@@ -34,17 +34,14 @@ def evaluate(model, data_loader, nfeat, device='cpu'):
     with torch.no_grad():
         pair_to_score = defaultdict(dict)
         
-        for input_nodes, edge_sub, blocks in data_loader:
-            batch_inputs, batch_labels = load_subtensor(*nfeat, edge_sub, input_nodes, device)
+        for input_nodes, pos_graph, blocks in data_loader:
             blocks = [block.int().to(device) for block in blocks]
             
-            batch_pred, attn = model(edge_sub, blocks, *batch_inputs)
-
-            preds = batch_pred.argmax(dim=1)
-            # print(batch_inputs[0])
-        
-            y_true.extend(batch_labels.detach().cpu().long().tolist())
-            y_pred.extend(preds.detach().cpu().long().tolist())
+            pos_batch_inputs, pos_batch_labels = load_subtensor(*nfeat, pos_graph, input_nodes, device)    
+            pos_batch_pred, pos_attn = model(pos_graph, blocks, *pos_batch_inputs)
+            pos_preds = pos_batch_pred.argmax(dim=1)
+            y_true.extend(pos_batch_labels.detach().cpu().long().tolist())
+            y_pred.extend(pos_preds.detach().cpu().long().tolist())
             
         
     result = classification_report(y_true, y_pred, digits=4, output_dict=True, zero_division=0)

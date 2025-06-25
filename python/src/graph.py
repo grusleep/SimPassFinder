@@ -38,16 +38,10 @@ class CustomDataset():
     
     def load_edge(self):
         self.logger.print(f"[*] Loading edges")
-        if self.edge_type == "reuse":
-            edge_file = os.path.join(self.dataset_path, "graph", "edges_reuse.json")
-        elif self.edge_type == "sim":
-            if self.data_type is not None:
-                edge_file = os.path.join(self.dataset_path, "graph", f"edges_{self.data_type}.json")
-            else:
-                
-                edge_file = os.path.join(self.dataset_path, "graph", "edges.json")
+        if self.data_type is not None:
+            edge_file = os.path.join(self.dataset_path, "graph", f"edges_{self.data_type}.json")
         else:
-            raise ValueError(f"Unknown edge type: {self.edge_type}. Use 'sim' or 'reuse'.")
+            edge_file = os.path.join(self.dataset_path, "graph", "edges.json")
         with open(edge_file, "r") as f:
             self.edges = json.load(f)
         self.logger.print(f"[+] Done loading edges")
@@ -164,11 +158,24 @@ class CustomDataset():
         
         self.logger.print(f"[+] Done setting edges")
         
-        # if save:
-        #     edge_file = os.path.join(self.dataset_path, "graph", f"edges.json")
-        #     with open(edge_file, "w", encoding="utf-8") as f:
-        #         json.dump(self.edges, f, indent=4, ensure_ascii=False)
-        #     self.logger.print(f"[+] Saved edges to {edge_file}\n")
+        
+    def set_all_edges(self):
+        self.logger.print(f"[*] Start Setting all edges")
+        edges = []
+        temp_edges = {}
+        for edge in self.edges:
+            temp_edges[(edge["node_1"], edge["node_2"])] = edge["weight"]
+        for i in range(len(self.nodes)):
+            for j in range(i + 1, len(self.nodes)):
+                if (i, j) in temp_edges:
+                    edges.append({"node_1": i, "node_2": j, "weight": temp_edges[(i, j)]})
+                else:
+                    edges.append({"node_1": i, "node_2": j, "weight": 0.0})
+            self.logger.print(f"[*] Setting edges: {i:5} / {len(self.nodes):5}")
+        with open(os.path.join(self.dataset_path, "graph", "edges_all.json"), "w", encoding="utf-8") as f:
+            json.dump(edges, f, indent=4, ensure_ascii=False)
+        self.logger.print(f"[+] Done setting all edges")
+        self.logger.print(f"[+] Number of edges: {len(edges)}\n")
         
         
     def txt_to_json(self, file):
@@ -270,9 +277,30 @@ class CustomDataset():
     def build_graph(self):
         self.logger.print(f"[*] Start building graph")
         
-        node_1_list = [edge["node_1"] for edge in self.edges]
-        node_2_list = [edge["node_2"] for edge in self.edges]
-        label_list = [1 if edge["weight"] > self.edge_thv else 0 for edge in self.edges]
+        node_1_list = []
+        node_2_list = []
+        label_list = []
+        edges = {}
+        for edge in self.edges:
+            if edge["weight"] < self.edge_thv:
+                continue
+            node_1_list.append(edge["node_1"])
+            node_2_list.append(edge["node_2"])
+            label_list.append(1.0)
+            edges[(edge["node_1"], edge["node_2"])] = edge["weight"]
+        
+        neg_edge_count = 0
+        while neg_edge_count < len(edges):
+            node_1 = torch.randint(0, len(self.nodes), (1,)).item()
+            node_2 = torch.randint(0, len(self.nodes), (1,)).item()
+            if node_1 == node_2 or (node_1, node_2) in edges or (node_2, node_1) in edges:
+                continue
+            node_1_list.append(node_1)
+            node_2_list.append(node_2)
+            label_list.append(0.0)
+            neg_edge_count += 1
+        
+        self.logger.print(f"[+] Done setting nodes and edges")
         
         data_dict = {
             ("site", "user", "site"): (node_1_list, node_2_list),
@@ -303,6 +331,7 @@ class CustomDataset():
         self.graph.edata["label"][sim_etype][eid_rev] = torch.tensor(label_list, dtype=torch.float)
         
         self.logger.print(f"[+] Done building graph\n")
+        self.print_graph(print_type="all")
         
         
     def print_graph(self, print_type="all"):
@@ -375,7 +404,11 @@ class CustomDataset():
         reverse_eid = self.get_reverse_eid(data_type)
         target_eid = self.get_target_eid(data_type)
         
-        sampler = dgl.dataloading.as_edge_prediction_sampler(dgl.dataloading.MultiLayerFullNeighborSampler(self.gnn_depth), exclude='reverse_id', reverse_eids=reverse_eid)
+        sampler = dgl.dataloading.as_edge_prediction_sampler(
+            dgl.dataloading.MultiLayerFullNeighborSampler(self.gnn_depth), 
+            exclude='reverse_id', 
+            reverse_eids=reverse_eid
+        )
         
         data_loader = dgl.dataloading.DataLoader(
                 graph,
@@ -439,3 +472,8 @@ class CustomDataset():
             mi = mutual_info_classif(x, edge_features, discrete_features=[True, True], random_state=0)
 
             self.logger.print(f"[+] MI({feat_name} → edge) = {mi[0]:.4f}")
+            
+            
+            
+if __name__ == "__main__":
+    pass

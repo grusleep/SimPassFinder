@@ -50,11 +50,11 @@ class Logger:
             self.model_name = args.model_name
             print(self.model_name)
             if args.run_type == "train":
-                self.log_path = os.path.join("log", args.setting, f"{self.model_name}.log")
+                self.log_path = os.path.join("../log", args.setting, f"{self.model_name}.log")
             else:
-                self.log_path = os.path.join("log", args.setting, f"{self.model_name}_test.log")
+                self.log_path = os.path.join("../log", args.setting, f"{self.model_name}_test.log")
         else:
-            self.log_path = os.path.join("log", f"{args.run_type}.log")
+            self.log_path = os.path.join("../log", f"{args.run_type}.log")
         self.reset_log()
         
         
