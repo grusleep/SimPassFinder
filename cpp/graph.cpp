@@ -11,7 +11,6 @@ struct SitePassword {
 };
 
 struct UserData {
-    int num = 0;
     std::vector<SitePassword> data;
 };
 
@@ -31,15 +30,16 @@ UserMap load_users(const std::string& filename) {
     UserMap result;
 
     while (std::getline(file, line)) {
-        if (line.find(": {") != std::string::npos) {
+        if (line.find(": [") != std::string::npos) {
             auto s = line.find("\"");
             auto e = line.find("\"", s + 1);
             email = line.substr(s + 1, e - s - 1);
             current = UserData();
         } else if (line.find("\"num\"") != std::string::npos) {
-            auto colon = line.find(":");
-            std::string num_str = trim_json(line.substr(colon + 1));
-            current.num = std::stoi(num_str);
+            //auto colon = line.find(":");
+            //std::string num_str = trim_json(line.substr(colon + 1));
+            //current.num = std::stoi(num_str);
+            continue;
         } else if (line.find("\"site\"") != std::string::npos) {
             auto s = line.find("\"", line.find(":")) + 1;
             auto e = line.find("\"", s);
@@ -69,78 +69,76 @@ void merge_user_into(UserMap& base, const std::string& email, const UserData& ne
     }
 }
 
-void stream_merge_users(const std::string& filename, UserMap& base) {
+// 사용자 하나를 저장 (append 모드)
+void save_user(std::ofstream& out, const std::string& email, const UserData& user, bool& first) {
+    if (!first) out << ",\n";
+    first = false;
+    out << "    \"" << email << "\": [\n";
+    for (size_t i = 0; i < user.data.size(); ++i) {
+        out << "        {\n";
+        out << "            \"site\": \"" << user.data[i].site << "\",\n"
+            << "            \"password\": \"" << user.data[i].password << "\"\n";
+        out << "        }";
+        if (i + 1 < user.data.size()) out << ",";
+        out << "\n";
+    }
+    out << "    ]";
+}
+
+// stream 병합 및 즉시 저장
+void stream_merge_and_save(const std::string& filename, UserMap& base, const std::string& output) {
     std::ifstream file(filename);
+    std::ofstream out(output);
+    out << "{\n";
     std::string line, email;
     UserData current;
+    bool first = true;
 
     while (std::getline(file, line)) {
-        if (line.find(": {") != std::string::npos) {
+        if (line.find(": [") != std::string::npos) {
             auto s = line.find("\"");
             auto e = line.find("\"", s + 1);
             email = line.substr(s + 1, e - s - 1);
             current = UserData();
-        } else if (line.find("\"num\"") != std::string::npos) {
-            auto colon = line.find(":");
-            std::string num_str = trim_json(line.substr(colon + 1));
-            current.num = std::stoi(num_str);
         } else if (line.find("\"site\"") != std::string::npos) {
             auto s = line.find("\"", line.find(":")) + 1;
             auto e = line.find("\"", s);
             std::string site = line.substr(s, e - s);
-
-            std::getline(file, line); // password 줄
+            std::getline(file, line); // password
             auto ps = line.find("\"", line.find(":")) + 1;
             auto pe = line.find("\"", ps);
             std::string pw = line.substr(ps, pe - ps);
-
             current.data.push_back({site, pw});
         } else if (line.find("]") != std::string::npos && !email.empty()) {
             merge_user_into(base, email, current);
+            save_user(out, email, base[email], first);
+            base.erase(email); // base에서 제거
             email.clear();
             current = UserData();
         }
     }
-}
 
-void save_users(const std::string& filename, const UserMap& users) {
-    std::ofstream out(filename);
-    out << "{\n";
-    bool first = true;
-    for (const auto& [email, user] : users) {
-        if (!first) out << ",\n";
-        first = false;
-        out << "    \"" << email << "\": {\n";
-        out << "        \"num\": " << user.num << ",\n";
-        out << "        \"data\": [\n";
-        for (size_t i = 0; i < user.data.size(); ++i) {
-            out << "            {\n";
-            out << "                \"site\": \"" << user.data[i].site << "\",\n"
-                << "                \"password\": \"" << user.data[i].password << "\"\n";
-            out << "            }";
-            if (i + 1 < user.data.size()) out << ",";
-            out << "\n";
-        }
-        out << "        ]\n";
-        out << "    }";
+    // base에 있었지만 새 파일에 없었던 사용자 추가 저장
+    for (const auto& [email, user] : base) {
+        if (user.data.empty()) continue; // 이미 저장했으면 비워뒀다는 전제
+        save_user(out, email, user, first);
+        base[email].data.clear();
     }
+
     out << "\n}\n";
 }
 
 int main() {
     std::string dir = "../dataset/users/";
-    std::string file1 = dir + "users_1_8.json";
-    std::string file2 = dir + "users_9_10_11_12.json";
+    std::string file1 = dir + "users_9_10_11_12.json";
+    std::string file2 = dir + "users_1_8.json";
     std::string output = dir + "users_all.json";
 
     auto data = load_users(file1);
     std::cout << "[+] Loaded " << data.size() << " users from " << file1 << "\n";
 
-    stream_merge_users(file2, data);
-    std::cout << "[+] Stream merge complete. Total users: " << data.size() << "\n";
-
-    save_users(output, data);
-    std::cout << "[+] Saved to " << output << "\n";
+    stream_merge_and_save(file2, data, output);
+    std::cout << "[+] Stream merge and save to " << output << "\n";
 
     return 0;
 }
