@@ -9,7 +9,7 @@ from src import *
 
 class PasswordSimilarity:
     def __init__(self, args, logger):
-        self.dataset_path = "dataset"
+        self.dataset_path = "../dataset"
         self.users = {}
         
         self.logger = logger
@@ -43,16 +43,16 @@ class PasswordSimilarity:
         self.logger.print(f"[+] Done loading nodes")
         self.logger.print(f"[+] Number of nodes: {len(self.nodes)}\n")
             
-            
+    # Modify function. Load user data from JSON file
     def load_users(self):
-        self.logger.print(f"[*] Loading node data")
-        node_file = os.path.join(self.dataset_path, "users.json")
-        with open(node_file, "r") as f:
+        self.logger.print(f"[*] Loading user data")
+        user_file = os.path.join(self.dataset_path, "users", "users_all.json")
+        with open(user_file, "r") as f:
             self.users = json.load(f)
-        self.logger.print(f"[+] Done loading nodes")
-        self.logger.print(f"[+] Number of nodes: {len(self.users)}\n")
-        
-        
+        self.logger.print(f"[+] Done loading users")
+        self.logger.print(f"[+] Number of users: {len(self.users)}\n")
+
+
     def graph_to_users(self):
         self.logger.print(f"[*] Converting graph to sites")
         users_num = 0
@@ -137,11 +137,13 @@ class PasswordSimilarity:
                 rules.append(3)
             if not self.get_leet_variations(pwd1).isdisjoint(self.get_leet_variations(pwd2)):
                 rules.append(4)
-            if pwd1.reverse() == pwd2:
+            if self.reverse_password(pwd1, pwd2):
                 rules.append(5)
-            if self.common_substring(pwd1, pwd2):
+            if self.sequential_key(pwd1) and self.sequential_key(pwd2):
                 rules.append(6)
-            
+            if self.common_substring(pwd1, pwd2):
+                rules.append(7)
+
         if len(rules) == 0:
             rules.append(0)
         return rules
@@ -160,10 +162,62 @@ class PasswordSimilarity:
         return set(all_combinations)
     
     
+    def reverse_password(self, pwd1, pwd2):        
+        pwd1 = pwd1.lower()
+        pwd2 = pwd2.lower()
+        reversed_pwd = pwd1[::-1]
+
+        if pwd2 == reversed_pwd:
+            return True
+        
+        return False
+    
+    def sequential_key(self, pwd):
+        if len(pwd) < 3:
+            return False
+        
+        pwd = pwd.lower()
+        
+        keyboard_seq_1 = "`1234567890-="
+        keyboard_seq_2 = "qwertyuiop[]\\"
+        keyboard_seq_3 = "asdfghjkl;'"
+        keyboard_seq_4 = "zxcvbnm,./"
+        keyboard_seq_5 = "~!@#$%^&*()_+"
+        keyboard_seq_6 = "qwertyuiop{}|"
+        keyboard_seq_7 = "asdfghjkl:\""
+        keyboard_seq_8 = "zxcvbnm<>?"
+        
+        keyboard_seqs = [
+            keyboard_seq_1, keyboard_seq_2, keyboard_seq_3, keyboard_seq_4,
+            keyboard_seq_5, keyboard_seq_6, keyboard_seq_7, keyboard_seq_8
+        ]
+        
+        for seq in keyboard_seqs:
+            if pwd in seq or pwd[::-1] in seq:
+                return True
+        
+        def check_seq(s):
+            return all(ord(s[i]) + 1 == ord(s[i+1]) for i in range(len(s)-1))
+        
+        return check_seq(pwd) or check_seq(pwd[::-1])
+
+    
+    
     def common_substring(self, pwd1, pwd2):
         len1, len2 = len(pwd1), len(pwd2)
         
-        return True
+        if len1 < 3 or len2 < 3:
+            return False
+        
+        from difflib import SequenceMatcher
+        matcher = SequenceMatcher(None, pwd1, pwd2)
+        match = matcher.find_longest_match(0, len1, 0, len2)
+        length = match.size
+
+        max_len = max(len1, len2)
+        ratio = length / max_len if max_len > 0 else 0
+
+        return length > 2 and ratio > 0.5
 
 
 
@@ -177,6 +231,7 @@ if __name__ == "__main__":
     args = init()
     logger = Logger(args)
     processor = PasswordSimilarity(args, logger)
-    processor.load_node()
-    processor.union_users_file("users_1_8.json", "users_9_10_11_12.json", "users_all.json")
-    
+    processor.load_users()
+    #processor.load_node()
+    #processor.union_users_file("users_1_8.json", "users_9_10_11_12.json", "users_all.json")
+    processor.find_rule()
