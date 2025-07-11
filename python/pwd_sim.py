@@ -4,7 +4,7 @@ import argparse
 import itertools
 
 from src import *
-
+from difflib import SequenceMatcher
 
 
 class PasswordSimilarity:
@@ -162,9 +162,7 @@ class PasswordSimilarity:
         return set(all_combinations)
     
     
-    def reverse_password(self, pwd1, pwd2):        
-        pwd1 = pwd1.lower()
-        pwd2 = pwd2.lower()
+    def reverse_password(self, pwd1, pwd2):
         reversed_pwd = pwd1[::-1]
 
         if pwd2 == reversed_pwd:
@@ -175,50 +173,43 @@ class PasswordSimilarity:
     def sequential_key(self, pwd):
         if len(pwd) < 3:
             return False
-        
-        pwd = pwd.lower()
-        
-        keyboard_seq_1 = "`1234567890-="
-        keyboard_seq_2 = "qwertyuiop[]\\"
-        keyboard_seq_3 = "asdfghjkl;'"
-        keyboard_seq_4 = "zxcvbnm,./"
-        keyboard_seq_5 = "~!@#$%^&*()_+"
-        keyboard_seq_6 = "qwertyuiop{}|"
-        keyboard_seq_7 = "asdfghjkl:\""
-        keyboard_seq_8 = "zxcvbnm<>?"
-        
-        keyboard_seqs = [
-            keyboard_seq_1, keyboard_seq_2, keyboard_seq_3, keyboard_seq_4,
-            keyboard_seq_5, keyboard_seq_6, keyboard_seq_7, keyboard_seq_8
-        ]
-        
-        for seq in keyboard_seqs:
-            if pwd in seq or pwd[::-1] in seq:
-                return True
-        
-        def check_seq(s):
-            return all(ord(s[i]) + 1 == ord(s[i+1]) for i in range(len(s)-1))
-        
-        return check_seq(pwd) or check_seq(pwd[::-1])
 
+        sequences = [
+            "`1234567890-=", "qwertyuiop[]\\", "asdfghjkl;'", "zxcvbnm,./",
+            "~!@#$%^&*()_+", "QWERTYUIOP{}|", "ASDFGHJKL:\"", "ZXCVBNM<>?",
+            "abcdefghijklmnopqrstuvwxyz", "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        ]
+
+        for seq in sequences:
+            for i in range(len(seq) - 2):
+                sub = seq[i:i+3]
+                if sub in pwd or sub[::-1] in pwd:
+                    return True
+
+        return False
     
     
     def common_substring(self, pwd1, pwd2):
-        len1, len2 = len(pwd1), len(pwd2)
-        
-        if len1 < 3 or len2 < 3:
-            return False
-        
-        from difflib import SequenceMatcher
+
         matcher = SequenceMatcher(None, pwd1, pwd2)
-        match = matcher.find_longest_match(0, len1, 0, len2)
-        length = match.size
+        matches = matcher.get_matching_blocks()
 
-        max_len = max(len1, len2)
-        ratio = length / max_len if max_len > 0 else 0
+        sizes = [match.size for match in matches if match.size > 0]
+        if not sizes:
+            return False
 
-        return length > 2 and ratio > 0.5
+        max_len = max(sizes)
+        total_common = sum(size for size in sizes if size > 0)
+        min_pwd_len = min(len(pwd1), len(pwd2))
 
+        return max_len >= 3 and (total_common / min_pwd_len > 0.5)
+
+    
+    
+    def combine_rules(self, rules):
+        
+        
+        return False
 
 
 def init():
