@@ -46,7 +46,7 @@ class PasswordSimilarity:
     # Modify function. Load user data from JSON file
     def load_users(self):
         self.logger.print(f"[*] Loading user data")
-        user_file = os.path.join(self.dataset_path, "users", "users_all.json")
+        user_file = os.path.join(self.dataset_path, "users", "users_test.json")
         with open(user_file, "r") as f:
             self.users = json.load(f)
         self.logger.print(f"[+] Done loading users")
@@ -110,54 +110,56 @@ class PasswordSimilarity:
         self.logger.print(f"[*] Finding password rules")
         num_single_site_users = 0
         
-        for i, user in enumerate(self.users.keys()):
+        for idx, user in enumerate(self.users.keys()):
             data = self.users[user]
             if len(data) < 2:
                 num_single_site_users += 1
             else:
-                user_rules = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0}
+                user_rules = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0}
                 for i in range(len(data)):
                     for j in range(i+1, len(data)):
                         pwd1 = data[i]['password']
                         pwd2 = data[j]['password']
                         rules = self.pwd_transformation_rule(pwd1, pwd2)
                         for rule in rules:
-                            user_rules[rule] += 1            
-            self.logger.print(f"[*] Processing user: {i:5} / {len(self.users):5}")
+                            user_rules[rule] += 1
+            self.logger.print(f"[*] Processing user: {idx:5} / {len(self.users):5}")
+        self.logger.print(f"[+] Total users with single site: {num_single_site_users}")
         
         
     def pwd_transformation_rule(self, pwd1, pwd2):
         rules = []
-        if pwd1 == pwd2:
-            rules.append(1)
+        if pwd1 == pwd2: 
+            rules.append(1) # rule 1: identical
         else:
             if pwd1 in pwd2 or pwd2 in pwd1:
-                rules.append(2)
+                rules.append(2) # rule 2: substring
             if pwd1.lower() == pwd2.lower():
-                rules.append(3)
+                rules.append(3) # rule 3: capitalization
             if not self.get_leet_variations(pwd1).isdisjoint(self.get_leet_variations(pwd2)):
-                rules.append(4)
+                rules.append(4) # rule 4: leet
             if self.reverse_password(pwd1, pwd2):
-                rules.append(5)
+                rules.append(5) # rule 5: reversal
             if self.sequential_key(pwd1) and self.sequential_key(pwd2):
-                rules.append(6)
+                rules.append(6) # rule 6: sequential keys
             if self.common_substring(pwd1, pwd2):
-                rules.append(7)
-
-        if len(rules) == 0:
-            rules.append(0)
+                rules.append(7) # rule 7: common substring
+            if self.combine_rules(pwd1, pwd2):
+                rules.append(8) # rule 8: combine rules
+            if not rules:
+                rules.append(0) # no rules matched
         return rules
     
     
     def get_leet_variations(self, password):
         variations = []
-        for char in password.lower():
+        for char in password:
             if char in self.leet_map:
                 leet_chars = self.leet_map[char]
                 leet_chars.append(char)
                 variations.append(leet_chars)
             else:
-                variations.append([].append(char))
+                variations.append([char])
         all_combinations = [''.join(p) for p in itertools.product(*variations)]
         return set(all_combinations)
     
@@ -205,11 +207,41 @@ class PasswordSimilarity:
         return max_len >= 3 and (total_common / min_pwd_len > 0.5)
 
     
+    def apply_rule_variants(self, pwd):
+        variants = set()
+        variants.add(pwd)
+
+        # rule 3: capitalization
+        variants.add(pwd.lower())
+
+        # rule 4: leet
+        variants.update(self.get_leet_variations(pwd))
+
+        # rule 5: reversal
+        variants.add(pwd[::-1])
+
+        # rule 6: sequential keys는 구조적으로 변형을 만들 수는 없으므로 비교만
+        # 여기서는 따로 변형 X
+
+        return variants
+
     
-    def combine_rules(self, rules):
-        
-        
+    
+    def combine_rules(self, pwd1, pwd2):
+        variants1 = self.apply_rule_variants(pwd1)
+        variants2 = self.apply_rule_variants(pwd2)
+
+        for v1 in variants1:
+            for v2 in variants2:
+                if v1 == v2:
+                    return True 
+                if v1 in v2 or v2 in v1:
+                    return True  # rule 2: substring
+                if self.common_substring(v1, v2):
+                    return True  # rule 7: common substring
+
         return False
+
 
 
 def init():
