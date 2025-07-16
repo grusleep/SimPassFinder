@@ -104,26 +104,53 @@ class PasswordSimilarity:
         with open(os.path.join(self.dataset_path, "users", output_file), "w") as f:
             json.dump(data1, f, indent=4)
         self.logger.print(f"[+] Union done, saved to {output_file}")
+
+
+    def save_rules_to_users(self, rule_to_users: dict):
+        self.logger.print(f"\n[*] Saving user list by rule")
+        
+        if not os.path.exists(os.path.join(self.dataset_path, "rules")):
+            os.makedirs(os.path.join(self.dataset_path, "rules"))
+
+        pretty_dict = {
+            str(rule): sorted(list(users))
+            for rule, users in rule_to_users.items()
+        }
+
+        output_path = os.path.join(self.dataset_path, "rules", "rules_users.json")
+        with open(output_path, "w", encoding="utf-8") as f:
+            json.dump(pretty_dict, f, indent=4, ensure_ascii=False)
+
+        self.logger.print(f"[+] Saved user list by rule to {output_path}")
+
         
         
     def find_rule(self):
         self.logger.print(f"[*] Finding password rules")
         num_single_site_users = 0
+        rule_to_users = {i: set() for i in range(9)}
+        users_rules = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0}
         
         for idx, user in enumerate(self.users.keys()):
             data = self.users[user]
             if len(data) < 2:
                 num_single_site_users += 1
             else:
-                user_rules = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0}
+                temp_user_rules = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0}
                 for i in range(len(data)):
                     for j in range(i+1, len(data)):
                         pwd1 = data[i]['password']
                         pwd2 = data[j]['password']
                         rules = self.pwd_transformation_rule(pwd1, pwd2)
                         for rule in rules:
-                            user_rules[rule] += 1
+                            temp_user_rules[rule] = 1
+                            rule_to_users[rule].add(user)
+                for rule, exist in temp_user_rules.items():
+                    if exist == 1:
+                        users_rules[rule] += 1
             self.logger.print(f"[*] Processing user: {idx:5} / {len(self.users):5}")
+        self.logger.print(f"[+] Users with rules: {users_rules}")
+        self.save_rules_to_users(rule_to_users)
         self.logger.print(f"[+] Total users with single site: {num_single_site_users}")
         
         
@@ -145,6 +172,7 @@ class PasswordSimilarity:
             if self.common_substring(pwd1, pwd2):
                 rules.append(7) # rule 7: common substring
             if self.combine_rules(pwd1, pwd2):
+                rules = []
                 rules.append(8) # rule 8: combine rules
             if not rules:
                 rules.append(0) # no rules matched
