@@ -1,0 +1,8 @@
+[
+{
+  "directory": "/home/kimchanwoo/Desktop/HITLab/SimPassFinder/build",
+  "command": "/usr/bin/g++   -g -std=gnu++17 -o CMakeFiles/MyProject.dir/cpp/graph.cpp.o -c /home/kimchanwoo/Desktop/HITLab/SimPassFinder/cpp/graph.cpp",
+  "file": "/home/kimchanwoo/Desktop/HITLab/SimPassFinder/cpp/graph.cpp",
+  "output": "CMakeFiles/MyProject.dir/cpp/graph.cpp.o"
+}
+]

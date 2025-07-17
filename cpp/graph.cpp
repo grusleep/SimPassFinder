@@ -73,11 +73,20 @@ void merge_user_into(UserMap& base, const std::string& email, const UserData& ne
 void save_user(std::ofstream& out, const std::string& email, const UserData& user, bool& first) {
     if (!first) out << ",\n";
     first = false;
+    size_t pos = 0;
     out << "    \"" << email << "\": [\n";
     for (size_t i = 0; i < user.data.size(); ++i) {
+        std::string pw = user.data[i].password;
+        // 비밀번호에 특수문자가 포함되어 있을 수 있으므로 이스케이프 처리
+        pos = 0;
+        while ((pos = pw.find("\\", pos)) != std::string::npos) {
+            pw.replace(pos, 1, "\\\\");
+            pos += 2;
+        }
+
         out << "        {\n";
         out << "            \"site\": \"" << user.data[i].site << "\",\n"
-            << "            \"password\": \"" << user.data[i].password << "\"\n";
+            << "            \"password\": \"" << pw << "\"\n";
         out << "        }";
         if (i + 1 < user.data.size()) out << ",";
         out << "\n";
