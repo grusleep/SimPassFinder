@@ -137,8 +137,8 @@ class PasswordSimilarity:
     def save_sites_rules(self, sites_rules):
         self.logger.print(f"[*] Saving site list by rule")
         
-        if not os.path.exists(os.path.join(self.dataset_path, "rules")):
-            os.makedirs(os.path.join(self.dataset_path, "rules"))
+        if not os.path.exists(os.path.join(self.dataset_path, "users")):
+            os.makedirs(os.path.join(self.dataset_path, "users"))
 
         site_rule = {
             site: {str(rule): count for rule, count in sorted(rules.items())}

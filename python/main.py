@@ -13,15 +13,15 @@ def init():
 
     parser.add_argument('--run_type', type=str, default="train", help='run type: train/test')
     parser.add_argument('--dataset_path', type=str, required=True, help='dataset_path')
-    parser.add_argument('--model_path', type=str, required=False, default="./model/", help='model grand path')
+    parser.add_argument('--model_path', type=str, required=False, default="../model/", help='model grand path')
     parser.add_argument('--model_name', type=str, default="model", help='model folder name')
 
-    parser.add_argument('--edge_thv', type=float, default=0.5, help='threshold for edge')
+    parser.add_argument('--edge_thv', type=float, default=0.7, help='threshold for edge')
     parser.add_argument('--setting', type=str, required=True, help='graph learning setting: inductive/transductive')
     parser.add_argument('--feature', type=str, default="all", help='feature type: all/site/category/country/sl/ip')
     parser.add_argument("--edge_type", type=str, default="sim", help='edge type: sim/reuse')
     
-    parser.add_argument('--random_seed', type=int, default=1, help='random seed for initialization')
+    parser.add_argument('--random_seed', type=int, default=2806, help='random seed for initialization')
     parser.add_argument('--valid', type=float, default=0.2, help='split ratio of validation set')
     parser.add_argument('--test', type=float, default=0.2, help='split ratio of test set')
     
