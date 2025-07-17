@@ -109,15 +109,15 @@ class PasswordSimilarity:
     def save_rules_to_users(self, rule_to_users: dict):
         self.logger.print(f"\n[*] Saving user list by rule")
         
-        if not os.path.exists(os.path.join(self.dataset_path, "rules")):
-            os.makedirs(os.path.join(self.dataset_path, "rules"))
+        if not os.path.exists(os.path.join(self.dataset_path, "users")):
+            os.makedirs(os.path.join(self.dataset_path, "users"))
 
         pretty_dict = {
             str(rule): sorted(list(users))
             for rule, users in rule_to_users.items()
         }
 
-        output_path = os.path.join(self.dataset_path, "rules", "rules_users.json")
+        output_path = os.path.join(self.dataset_path, "users", "rules_users.json")
         with open(output_path, "w", encoding="utf-8") as f:
             json.dump(pretty_dict, f, indent=4, ensure_ascii=False)
 
