@@ -36,7 +36,7 @@ class PasswordSimilarity:
         }
         
         
-    #def load_node(self):
+    # def load_node(self):
     #    self.logger.print(f"[*] Loading node data")
     #    node_file = os.path.join(self.dataset_path, "graph", "nodes.json")
     #    with open(node_file, "r") as f:
@@ -45,7 +45,7 @@ class PasswordSimilarity:
     #    self.logger.print(f"[+] Number of nodes: {len(self.nodes)}\n")
     
     # Modify function. Load user data from JSON file
-    #def load_users(self):
+    # def load_users(self):
     #    self.logger.print(f"[*] Loading user data")
     #    user_file = os.path.join(self.dataset_path, "users", "users_test.json")
     #    with open(user_file, "r") as f:
@@ -54,8 +54,8 @@ class PasswordSimilarity:
     #    self.logger.print(f"[+] Number of users: {len(self.users)}\n")
 
     # Lazy loading user data from JSON file
-    def load_users_lazy(self, path):
-        self.logger.print(f"[*] Lazy loading users from {path}\n")
+    def load_users(self, path):
+        #self.logger.print(f"[*] Loading user data from {path}\n")
         invalid_users = []
         error_path = os.path.join(self.dataset_path, "users", "invalid_users.txt")
         count = 0
@@ -81,10 +81,10 @@ class PasswordSimilarity:
                     f.write(email + "\n")
 
 
-    #def graph_to_users(self):
+    # def graph_to_users(self):
     #    self.logger.print(f"[*] Converting graph to sites")
     #    users_num = 0
-    #    
+       
     #    for i, node in enumerate(self.nodes):
     #        site = node['site']
     #        with open(os.path.join(self.dataset_path, "sites", f"{site}.json")) as f:
@@ -98,25 +98,27 @@ class PasswordSimilarity:
     #                "site": site,
     #                "password": data[user]
     #            })
-    #            
+               
     #        self.logger.print(f"[*] Processing site: {i:5} / {len(self.nodes):5}")
     #        if i!=0 and i%1000 == 0:
     #            with open(os.path.join(self.dataset_path, "users", f"users_{i}.json"), "w") as f:
     #                json.dump(self.users, f, indent=4)
     #            self.users = {}
     #            self.logger.print(f"[+] Saving users to file: users_{i}.json")
-    #    
+       
     #    with open(os.path.join(self.dataset_path, "users", f"users_{len(self.nodes)}.json"), "w") as f:
     #        json.dump(self.users, f, indent=4)
     #    self.logger.print(f"[+] Total users: {len(self.users)}")
         
         
-    #def union_users_file(self, file1, file2, output_file):
+    # def union_users_file(self, file1, file2, output_file):
     #    self.logger.print(f"[*] Union users from {file1} and {file2}")
     #    with open(os.path.join(self.dataset_path, "users", file1), "r") as f1:
     #        data1 = json.load(f1)
     #    self.logger.print(f"[+] Loaded {len(data1)} users from {file1}")
     #    with open(os.path.join(self.dataset_path, "users", file2), "r") as f2:
+    # processor.load_node()
+    # processor.union_users_file("users_1_8.json", "users_9_10_11_12.json", "users_all.json")
     #        data2 = json.load(f2)
     #    self.logger.print(f"[+] Loaded {len(data2)} users from {file2}")
     #    exit()
@@ -152,15 +154,18 @@ class PasswordSimilarity:
         self.logger.print(f"[+] Saved site list by rule to {output_path}")
 
         
-    def find_rule(self):
-        user_file = os.path.join(self.dataset_path, "users", "users_all.json")
-        user_stream = self.load_users_lazy(user_file)
+    def find_rule(self, user_file):
+        user_stream = self.load_users(user_file)
+
+        self.logger.print(f"[*] Loading user data from {user_file}\n")
+        user_count = sum(1 for _ in user_stream)  # Count users
+        user_stream = self.load_users(user_file)  # Reload the stream for processing
 
         self.logger.print(f"[*] Finding password rules")
         num_single_site_users = 0
         sites_rules = dict()
         
-        for idx, (user, user_data) in enumerate(tqdm(user_stream, desc="Processing users", dynamic_ncols=True)):
+        for idx, (user, user_data) in enumerate(tqdm(user_stream, desc="Processing users", total=user_count)):
             if len(user_data) < 2:
                 num_single_site_users += 1
             else:
@@ -178,12 +183,12 @@ class PasswordSimilarity:
                                     sites_rules[site][key] = 0
                                 sites_rules[site][key] += 1
               
-            #if idx % 10000 == 0 and idx > 0:
+            # if idx % 10000 == 0 and idx > 0:
             #    self.save_sites_rules(sites_rules)
             #    sites_rules = dict()  
                 
-            #self.logger.print(f"[*] Processing user: {idx:5} / {len(self.users):5}")
-        #self.logger.print(f"[+] Users with rules: {users_rules}")
+        #     self.logger.print(f"[*] Processing user: {idx:5} / {len(self.users):5}")
+        # self.logger.print(f"[+] Users with rules: {users_rules}")
         self.logger.print(f"[+] Done processing users\n")
         self.save_sites_rules(sites_rules)
         self.logger.print(f"[+] Total users with single site: {num_single_site_users}")
@@ -320,7 +325,8 @@ if __name__ == "__main__":
     args = init()
     logger = Logger(args)
     processor = PasswordSimilarity(args, logger)
-    #processor.load_users()
-    #processor.load_node()
-    #processor.union_users_file("users_1_8.json", "users_9_10_11_12.json", "users_all.json")
-    processor.find_rule()
+    user_file = os.path.join(processor.dataset_path, "users", "users_1_8.json")
+    # processor.load_users()
+    # processor.load_node()
+    # processor.union_users_file("users_1_8.json", "users_9_10_11_12.json", "users_all.json")
+    processor.find_rule(user_file)
