@@ -325,7 +325,7 @@ if __name__ == "__main__":
     args = init()
     logger = Logger(args)
     processor = PasswordSimilarity(args, logger)
-    user_file = os.path.join(processor.dataset_path, "users", "users_1_8.json")
+    user_file = os.path.join(processor.dataset_path, "users", "users_all.json")
     # processor.load_users()
     # processor.load_node()
     # processor.union_users_file("users_1_8.json", "users_9_10_11_12.json", "users_all.json")
