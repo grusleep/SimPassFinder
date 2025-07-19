@@ -114,6 +114,9 @@ class PasswordSimilarity:
                                 if key not in sites_rules[site]:
                                     sites_rules[site][key] = 0
                                 sites_rules[site][key] += 1
+    # 사용자별 캐시 비우기
+    self._leet_cache.clear()
+    self._variant_cache.clear()
               
         self.logger.print(f"[+] Done processing users\n")
         self.save_sites_rules(sites_rules)
