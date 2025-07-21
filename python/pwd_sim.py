@@ -71,8 +71,8 @@ class PasswordSimilarity:
     def save_sites_rules(self, sites_rules):
         self.logger.print(f"[*] Saving site list by rule")
         
-        if not os.path.exists(os.path.join(self.dataset_path, "users")):
-            os.makedirs(os.path.join(self.dataset_path, "users"))
+        if not os.path.exists(os.path.join(self.dataset_path, "rules")):
+            os.makedirs(os.path.join(self.dataset_path, "rules"))
 
         site_rule = {
             site: {str(rule): count for rule, count in sorted(rules.items())}
@@ -114,9 +114,9 @@ class PasswordSimilarity:
                                 if key not in sites_rules[site]:
                                     sites_rules[site][key] = 0
                                 sites_rules[site][key] += 1
-    # 사용자별 캐시 비우기
-    self._leet_cache.clear()
-    self._variant_cache.clear()
+            # 사용자별 캐시 비우기
+            self._leet_cache.clear()
+            self._variant_cache.clear()
               
         self.logger.print(f"[+] Done processing users\n")
         self.save_sites_rules(sites_rules)
