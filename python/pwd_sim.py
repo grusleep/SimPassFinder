@@ -8,6 +8,9 @@ import functools
 from src import *
 from difflib import SequenceMatcher
 from tqdm import tqdm
+from itertools import islice
+
+N = 10000 # Number of parsing keys
 
 class PasswordSimilarity:
     def __init__(self, args, logger):
@@ -42,7 +45,6 @@ class PasswordSimilarity:
 
     # Lazy loading user data from JSON file
     def load_users(self, path):
-        #self.logger.print(f"[*] Loading user data from {path}\n")
         invalid_users = []
         error_path = os.path.join(self.dataset_path, "users", "invalid_users.txt")
         count = 0
@@ -53,7 +55,6 @@ class PasswordSimilarity:
                     try:
                         if not isinstance(data, list):
                             raise ValueError("Invalid data type")
-                        #self.logger.print(f"[*] Processing user: {email}")
                         yield email, data
                     except Exception as e:
                         invalid_users.append(email)
@@ -138,7 +139,7 @@ class PasswordSimilarity:
                 rules.append(5) # rule 5: reversal
             if self.sequential_key(pwd1) and self.sequential_key(pwd2):
                 rules.append(6) # rule 6: sequential keys
-            if self.common_substring(pwd1, pwd2):
+            if self.common_substring(pwd1, pwd2) and 2 not in rules:
                 rules.append(7) # rule 7: common substring
             if len(rules) >= 2:
                 rules = [8] # rule 8: combine rules
@@ -153,6 +154,7 @@ class PasswordSimilarity:
         # 캐시 사용
         if password in self._leet_cache:
             return self._leet_cache[password]
+        
         variations = []
         for char in password:
             leet_chars = self.leet_map.get(char, [])
@@ -242,14 +244,13 @@ class PasswordSimilarity:
 
         # 1. 교집합 먼저 빠르게 확인
         if variants1 & variants2:
-            return True
-        # 2. substring, common_substring은 꼭 필요한 경우만
-        for v1 in variants1:
-            for v2 in variants2:
-                if v1 in v2 or v2 in v1:
-                    return True  # rule 2: substring
-                if self.common_substring(v1, v2):
-                    return True  # rule 7: common substring
+            # 2. substring, common_substring은 꼭 필요한 경우만
+            for v1 in variants1:
+                for v2 in variants2:
+                    if v1 in v2 or v2 in v1:
+                        return True  # rule 2: substring
+                    if self.common_substring(v1, v2):
+                        return True  # rule 7: common substring
 
         return False
 
