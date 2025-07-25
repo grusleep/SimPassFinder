@@ -26,6 +26,7 @@ class CustomDataset():
         self.logger = logger
         self.num_thv = 30
         self.data_type = None
+        self.with_rules = True
         
         
     def load_meta_data(self):
@@ -39,7 +40,7 @@ class CustomDataset():
     def load_edge(self):
         self.logger.print(f"[*] Loading edges")
         if self.data_type is not None:
-            edge_file = os.path.join(self.dataset_path, "graph", f"edges_{self.data_type}.json")
+            edge_file = os.path.join(self.dataset_path, "graph", f"edges_{self.data_type}.json")      
         else:
             edge_file = os.path.join(self.dataset_path, "graph", "edges.json")
         with open(edge_file, "r") as f:
@@ -52,6 +53,8 @@ class CustomDataset():
         self.logger.print(f"[*] Loading nodes")
         if self.data_type is not None:
             node_file = os.path.join(self.dataset_path, "graph", f"nodes_{self.data_type}.json")
+        elif self.with_rules:
+            edge_file = os.path.join(self.dataset_path, "graph", f"nodes_with_rules.json")
         else:
             node_file = os.path.join(self.dataset_path, "graph", f"nodes.json")
         with open(node_file, "r") as f:
@@ -474,6 +477,22 @@ class CustomDataset():
             self.logger.print(f"[+] MI({feat_name} → edge) = {mi[0]:.4f}")
             
             
+    def set_site_rule(self):
+        self.logger.print(f"[*] Setting site rule")
+        with open(self.dataset_path, "graph", "sites_rules.json", "r") as f:
+            rules = json.loads(f)
+        
+        
+        for node in self.nodes:
+            rule = rules[node["site"]]
+            print(rule)
+            exit()
+            
+        with open(self.dataset_path, "graph", "nodes_with_rules.json") as f:
+            json.dump(self.nodes, indent=4, ensure_ascii=False)
+        self.logger.print(f"[+] Saved node data")
+        
+        
             
 if __name__ == "__main__":
     pass

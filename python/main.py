@@ -71,10 +71,11 @@ def init_dataset(args, device, logger):
 def set_graph(args, device, logger):
     logger.print("Setting Graph".center(TOTAL_WIDTH, "="))
     graph = CustomDataset(args, device, logger)
-    graph.load_meta_data()
+    # graph.load_meta_data()
     graph.load_node()
+    
     # graph.set_edge()
-    graph.txt_to_json("edges")
+    # graph.txt_to_json("edges")
 
 
 def train(args, device, dataset, logger):
