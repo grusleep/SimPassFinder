@@ -46,7 +46,7 @@ class PasswordSimilarity:
     # Modify function. Load user data from JSON file
     def load_users(self):
         self.logger.print(f"[*] Loading user data")
-        user_file = os.path.join(self.dataset_path, "users", "users_all.json")
+        user_file = os.path.join(self.dataset_path, "users", "users_test.json")
         with open(user_file, "r") as f:
             self.users = json.load(f)
         self.logger.print(f"[+] Done loading users")
