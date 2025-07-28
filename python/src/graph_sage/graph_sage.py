@@ -13,6 +13,7 @@ class GraphSAGE(nn.Module):
         super(GraphSAGE, self).__init__()
         self.emb_dim = args.embed_size
         self.n_hidden = args.hidden_size
+        self.with_rules = args.feature == "with_rules"
         
         self.agg_type = args.agg_type
         self.dropout = nn.Dropout(args.dropout)
@@ -24,6 +25,8 @@ class GraphSAGE(nn.Module):
         self.embed_category = nn.Embedding(101, self.emb_dim)
         self.embed_country = nn.Embedding(92, self.emb_dim)
         self.embed_sl = nn.Embedding(6, self.emb_dim)
+        if self.with_rules:
+            self.embed_rules = nn.Linear(9, self.emb_dim)
         
         self.embed_url = nn.Embedding(128, self.emb_dim)
         self.lstm = nn.LSTM(self.emb_dim, self.emb_dim, batch_first=True, bidirectional=True)
@@ -43,6 +46,9 @@ class GraphSAGE(nn.Module):
                                     [SAGEConvN(self.n_hidden, self.n_hidden, aggregator_type=self.agg_type) for i in range(self.num_layers - 1)])
         self.conv_ip = nn.ModuleList([SAGEConvN(32, self.n_hidden, aggregator_type=self.agg_type)] + 
                                     [SAGEConvN(self.n_hidden, self.n_hidden, aggregator_type=self.agg_type) for i in range(self.num_layers - 1)])
+        self.conv_r = nn.ModuleList([SAGEConvN(self.emb_dim, self.n_hidden, aggregator_type=self.agg_type)] + 
+                                    [SAGEConvN(self.n_hidden, self.n_hidden, aggregator_type=self.agg_type) for i in range(self.num_layers - 1)])
+        
         # self.conv = nn.ModuleList([SAGEConvN(self.emb_dim*4+32, self.n_hidden, aggregator_type=self.agg_type)] + 
         #                             [SAGEConvN(self.n_hidden, self.n_hidden, aggregator_type=self.agg_type) for i in range(self.num_layers - 1)])
         
@@ -62,17 +68,21 @@ class GraphSAGE(nn.Module):
         return {'score': score, 'attn': attn}
 
 
-    def forward(self, edge_sub, blocks, inputs_s, inputs_sm, inputs_c, inputs_co, inputs_sl, inputs_ip):
+    def forward(self, edge_sub, blocks, batch_inputs):
+        if self.with_rules:
+            inputs_s, inputs_sm, inputs_c, inputs_co, inputs_sl, inputs_ip, inputs_r = batch_inputs
+        else:
+            inputs_s, inputs_sm, inputs_c, inputs_co, inputs_sl, inputs_ip = batch_inputs
+            
         assert inputs_s.shape[1] == inputs_sm.shape[1]
         assert inputs_ip.shape[1] == 32
         
         vec_category = self.embed_category(inputs_c)
-        
         vec_country = self.embed_country(inputs_co)
-        
         vec_sl = self.embed_sl(inputs_sl)
-        
         vec_ip = inputs_ip
+        if self.with_rules:
+            vec_rules = self.embed_rules(inputs_r.float())
         
         url_input = inputs_s
         url_mask = inputs_sm
@@ -86,11 +96,13 @@ class GraphSAGE(nn.Module):
         _vec_url = self.relu(_vec_url)
         _vec_url = self.dropout(_vec_url)
         vec_url = _vec_url
+        
         h1 = vec_url
         h2 = vec_category
         h3 = vec_country
         h4 = vec_sl
         h5 = vec_ip
+        h6 = vec_rules
     
         for i in range(self.num_layers):
             h1 = self.conv_s[i](blocks[i], h1)
@@ -117,7 +129,12 @@ class GraphSAGE(nn.Module):
             h5 = self.relu(h5)
             h5 = self.dropout(h5)
             
-        h_stack = torch.stack([h1, h2, h3, h4, h5], dim=1)
+        for i in range(self.num_layers):
+            h6 = self.conv_r[i](blocks[i], h6)
+            h6 = self.relu(h6)
+            h6 = self.dropout(h6)
+            
+        h_stack = torch.stack([h1, h2, h3, h4, h5, h6], dim=1)
         attn = self.softmax(self.attn(self.attn_linear(h_stack)))
         h = torch.sum((self.attn_linear(h_stack) * attn), dim=1)
         

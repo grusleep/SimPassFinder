@@ -11,6 +11,7 @@ class GAT(nn.Module):
         self.emb_dim = args.embed_size
         self.n_hidden = args.hidden_size
         self.n_layers = args.gnn_depth
+        self.with_rules = args.feature == "with_rules"
         self.n_heads = 4
         self.dropout = nn.Dropout(args.dropout)
         self.relu = nn.LeakyReLU(args.relu)
@@ -19,11 +20,15 @@ class GAT(nn.Module):
         self.embed_country = nn.Embedding(92, self.emb_dim)
         self.embed_sl = nn.Embedding(6, self.emb_dim)
         self.embed_url = nn.Embedding(128, self.emb_dim)
+        if self.with_rules:
+            self.embed_rules = nn.Linear(9, self.emb_dim)
 
         self.lstm = nn.LSTM(self.emb_dim, self.emb_dim, batch_first=True, bidirectional=True)
         self.fc_lstm = nn.Linear(self.emb_dim * 2, self.emb_dim)
     
         input_dim = self.emb_dim * 4 + 32
+        if self.with_rules:
+            input_dim += self.emb_dim
         output_dim = self.n_hidden
         heads = [self.n_heads] * (self.n_layers-1) + [1]
         self.gat_layers = nn.ModuleList()
@@ -45,7 +50,11 @@ class GAT(nn.Module):
         self.fc_out = nn.Linear(self.n_hidden, 2)
         
     
-    def forward(self, edge_sub, blocks, inputs_s, inputs_sm, inputs_c, inputs_co, inputs_sl, inputs_ip):
+    def forward(self, edge_sub, blocks, batch_inputs):
+        if self.with_rules:
+            inputs_s, inputs_sm, inputs_c, inputs_co, inputs_sl, inputs_ip, inputs_r = batch_inputs
+        else:
+            inputs_s, inputs_sm, inputs_c, inputs_co, inputs_sl, inputs_ip = batch_inputs
         lengths = inputs_sm.sum(dim=1)
         url_emb = self.embed_url(inputs_s)
         packed = pack_padded_sequence(url_emb, lengths.cpu(), batch_first=True, enforce_sorted=False)
@@ -59,20 +68,24 @@ class GAT(nn.Module):
         country_emb = self.embed_country(inputs_co).squeeze(1)
         sec_emb = self.embed_sl(inputs_sl).squeeze(1)
         ip_emb = inputs_ip.float()
-        
-        h = torch.cat([h, cat_emb, country_emb, sec_emb, ip_emb], dim=1)
+        if self.with_rules:
+            rules_emb = self.embed_rules(inputs_r.float())
+            h = torch.cat([h, cat_emb, country_emb, sec_emb, ip_emb, rules_emb], dim=1)
+        else:
+            h = torch.cat([h, cat_emb, country_emb, sec_emb, ip_emb], dim=1)
         
         attn = None
         for i, layer in enumerate(self.gat_layers):
+            edge_type = ("site", "sim", "site")
+            block = blocks[i][edge_type]
             if i == self.n_layers - 1:
-                h, attn = layer(blocks[i][('site','sim','site')], h, get_attention=True)
+                h, attn = layer(block, h, get_attention=True)
                 h = h.squeeze(1)
             else:
-                h = layer(blocks[i][('site','sim','site')]  , h)
+                h = layer(block, h)
                 h = h.flatten(1)
                 h = self.relu(h)
                 h = self.dropout(h)
-        
         src, dst = edge_sub.edges(etype='sim', order='eid')
         h_src = h[src]
         h_dst = h[dst]
