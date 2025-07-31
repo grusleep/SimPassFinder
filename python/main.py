@@ -18,7 +18,7 @@ def init():
 
     parser.add_argument('--edge_thv', type=float, default=0.7, help='threshold for edge')
     parser.add_argument('--setting', type=str, required=True, help='graph learning setting: inductive/transductive')
-    parser.add_argument('--feature', type=str, default="all", help='feature type: all/site/category/country/sl/ip')
+    parser.add_argument('--feature', type=str, default="all", help='feature type: all/with_rules')
     parser.add_argument("--edge_type", type=str, default="sim", help='edge type: sim/reuse')
     
     parser.add_argument('--random_seed', type=int, default=2806, help='random seed for initialization')
@@ -71,10 +71,12 @@ def init_dataset(args, device, logger):
 def set_graph(args, device, logger):
     logger.print("Setting Graph".center(TOTAL_WIDTH, "="))
     graph = CustomDataset(args, device, logger)
-    graph.load_meta_data()
+    # graph.load_meta_data()
     graph.load_node()
+    graph.set_site_rule()
+    
     # graph.set_edge()
-    graph.txt_to_json("edges")
+    # graph.txt_to_json("edges")
 
 
 def train(args, device, dataset, logger):
@@ -127,9 +129,9 @@ def train(args, device, dataset, logger):
         total_loss = 0.0
         for input_nodes, edge_sub, blocks in train_loader:
             optimizer.zero_grad()
-            batch_inputs, batch_labels = load_subtensor(*train_nfeat, edge_sub, input_nodes, device)
+            batch_inputs, batch_labels = load_subtensor(train_nfeat, edge_sub, input_nodes, device)
             blocks = [block.int().to(device) for block in blocks]
-            output, attn = model(edge_sub, blocks, *batch_inputs)
+            output, attn = model(edge_sub, blocks, batch_inputs)
             probs = torch.sigmoid(output)
             batch_labels = torch.nn.functional.one_hot(batch_labels.long(), num_classes=2).float()
             loss = loss_fn(probs.float(), batch_labels.float())
@@ -142,9 +144,9 @@ def train(args, device, dataset, logger):
         total_loss = 0.0
         for input_nodes, edge_sub, blocks in valid_loader:
             optimizer.zero_grad()
-            batch_inputs, batch_labels = load_subtensor(*valid_nfeat, edge_sub, input_nodes, device)
+            batch_inputs, batch_labels = load_subtensor(valid_nfeat, edge_sub, input_nodes, device)
             blocks = [block.int().to(device) for block in blocks]
-            output, attn = model(edge_sub, blocks, *batch_inputs)
+            output, attn = model(edge_sub, blocks, batch_inputs)
             probs = torch.sigmoid(output)
             batch_labels = torch.nn.functional.one_hot(batch_labels.long(), num_classes=2).float()
             loss = loss_fn(probs.float(), batch_labels.float())

@@ -12,17 +12,22 @@ class GCN(nn.Module):
         self.dropout = nn.Dropout(args.dropout)
         self.relu = nn.LeakyReLU(args.relu)
         self.num_layers = args.gnn_depth
+        self.with_rules = args.feature == "with_rules"
 
         # Embedding layers for categorical features
         self.embed_category = nn.Embedding(101, self.emb_dim)
         self.embed_country = nn.Embedding(92, self.emb_dim)
         self.embed_sl = nn.Embedding(6, self.emb_dim)
         self.embed_url = nn.Embedding(128, self.emb_dim)
+        if self.with_rules:
+            self.embed_rules = nn.Linear(9, self.emb_dim)
 
         self.lstm = nn.LSTM(self.emb_dim, self.emb_dim, batch_first=True, bidirectional=True)
         self.fc_lstm = nn.Linear(self.emb_dim * 2, self.emb_dim)
 
         self.input_dim = self.emb_dim * 4 + 32  # +4 for float IP
+        if self.with_rules:
+            self.input_dim += self.emb_dim
 
         # GCN layers with HeteroGraphConv (edge type: 'sim')
         self.gcn_layers = nn.ModuleList()
@@ -44,7 +49,12 @@ class GCN(nn.Module):
             nn.Linear(self.hidden_size, 2)
         )
 
-    def forward(self, edge_sub, blocks, inputs_s, inputs_sm, inputs_c, inputs_co, inputs_sl, inputs_ip):
+    def forward(self, edge_sub, blocks, batch_inputs):
+        if self.with_rules:
+            inputs_s, inputs_sm, inputs_c, inputs_co, inputs_sl, inputs_ip, inputs_r = batch_inputs
+        else:
+            inputs_s, inputs_sm, inputs_c, inputs_co, inputs_sl, inputs_ip = batch_inputs
+            
         # 1. Node feature construction
         lengths = inputs_sm.sum(dim=1)
         url_emb = self.embed_url(inputs_s)
@@ -59,8 +69,10 @@ class GCN(nn.Module):
         h_country = self.embed_country(inputs_co).squeeze(1)
         h_sec = self.embed_sl(inputs_sl).squeeze(1)
         h_ip = inputs_ip.float()
+        if self.with_rules:
+            h_rules = self.embed_rules(inputs_r.float())
 
-        h = torch.cat([h_url, h_cat, h_country, h_sec, h_ip], dim=1)
+        h = torch.cat([h_url, h_cat, h_country, h_sec, h_ip, h_rules], dim=1)
 
         # 2. GNN propagation using HeteroGraphConv
         h_dict = {'site': h}

@@ -12,4 +12,5 @@ test.py
 *.sh
 *.txt
 !CMakeLists.txt
+!requirements.txt
 *.log

@@ -23,21 +23,6 @@ std::string trim_json(const std::string& s) {
     return (start == std::string::npos) ? "" : s.substr(start, end - start + 1);
 }
 
-// 문자열 s에서 unescaped "의 위치를 찾는 함수
-size_t find_unescaped_quote(const std::string& s, size_t start = 0) {
-    size_t i = start;
-    while (i < s.size()) {
-        if (s[i] == '\\') {
-            // \가 나오면 다음 문자(escape 문자) 건너뜀
-            ++i;
-        } else if (s[i] == '"') {
-            return i;
-        }
-        ++i;
-    }
-    return std::string::npos;
-}
-
 UserMap load_users(const std::string& filename) {
     std::ifstream file(filename);
     std::string line, email;
@@ -47,17 +32,22 @@ UserMap load_users(const std::string& filename) {
     while (std::getline(file, line)) {
         if (line.find(": [") != std::string::npos) {
             auto s = line.find("\"");
-            auto e = find_unescaped_quote(line, s + 1);
+            auto e = line.find("\"", s + 1);
             email = line.substr(s + 1, e - s - 1);
             current = UserData();
+        } else if (line.find("\"num\"") != std::string::npos) {
+            //auto colon = line.find(":");
+            //std::string num_str = trim_json(line.substr(colon + 1));
+            //current.num = std::stoi(num_str);
+            continue;
         } else if (line.find("\"site\"") != std::string::npos) {
             auto s = line.find("\"", line.find(":")) + 1;
-            auto e = find_unescaped_quote(line, s);
+            auto e = line.find("\"", s);
             std::string site = line.substr(s, e - s);
 
             std::getline(file, line); // password 줄
             auto ps = line.find("\"", line.find(":")) + 1;
-            auto pe = find_unescaped_quote(line, ps);
+            auto pe = line.find("\"", ps);
             std::string pw = line.substr(ps, pe - ps);
 
             current.data.push_back({site, pw});
@@ -83,15 +73,13 @@ void merge_user_into(UserMap& base, const std::string& email, const UserData& ne
 void save_user(std::ofstream& out, const std::string& email, const UserData& user, bool& first) {
     if (!first) out << ",\n";
     first = false;
-    size_t data_size = user.data.size();
-
     out << "    \"" << email << "\": [\n";
-    for (size_t i = 0; i < data_size; ++i) {
+    for (size_t i = 0; i < user.data.size(); ++i) {
         out << "        {\n";
         out << "            \"site\": \"" << user.data[i].site << "\",\n"
             << "            \"password\": \"" << user.data[i].password << "\"\n";
         out << "        }";
-        if (i + 1 < data_size) out << ",";
+        if (i + 1 < user.data.size()) out << ",";
         out << "\n";
     }
     out << "    ]";
@@ -109,16 +97,16 @@ void stream_merge_and_save(const std::string& filename, UserMap& base, const std
     while (std::getline(file, line)) {
         if (line.find(": [") != std::string::npos) {
             auto s = line.find("\"");
-            auto e = find_unescaped_quote(line, s + 1);
+            auto e = line.find("\"", s + 1);
             email = line.substr(s + 1, e - s - 1);
             current = UserData();
         } else if (line.find("\"site\"") != std::string::npos) {
             auto s = line.find("\"", line.find(":")) + 1;
-            auto e = find_unescaped_quote(line, s);
+            auto e = line.find("\"", s);
             std::string site = line.substr(s, e - s);
             std::getline(file, line); // password
             auto ps = line.find("\"", line.find(":")) + 1;
-            auto pe = find_unescaped_quote(line, ps);
+            auto pe = line.find("\"", ps);
             std::string pw = line.substr(ps, pe - ps);
             current.data.push_back({site, pw});
         } else if (line.find("]") != std::string::npos && !email.empty()) {

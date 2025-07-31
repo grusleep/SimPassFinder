@@ -26,6 +26,7 @@ class CustomDataset():
         self.logger = logger
         self.num_thv = 30
         self.data_type = None
+        self.with_rules = args.feature == "with_rules"
         
         
     def load_meta_data(self):
@@ -39,7 +40,7 @@ class CustomDataset():
     def load_edge(self):
         self.logger.print(f"[*] Loading edges")
         if self.data_type is not None:
-            edge_file = os.path.join(self.dataset_path, "graph", f"edges_{self.data_type}.json")
+            edge_file = os.path.join(self.dataset_path, "graph", f"edges_{self.data_type}.json")      
         else:
             edge_file = os.path.join(self.dataset_path, "graph", "edges.json")
         with open(edge_file, "r") as f:
@@ -52,6 +53,8 @@ class CustomDataset():
         self.logger.print(f"[*] Loading nodes")
         if self.data_type is not None:
             node_file = os.path.join(self.dataset_path, "graph", f"nodes_{self.data_type}.json")
+        elif self.with_rules:
+            node_file = os.path.join(self.dataset_path, "graph", f"nodes_with_rules.json")
         else:
             node_file = os.path.join(self.dataset_path, "graph", f"nodes.json")
         with open(node_file, "r") as f:
@@ -259,6 +262,8 @@ class CustomDataset():
         encode_node["ip"] = [float(bit)
                             for byte in bit_strs
                             for bit in byte]
+        if self.with_rules:
+            encode_node["rules"] = node["rules"]
 
         return encode_node
     
@@ -272,6 +277,8 @@ class CustomDataset():
             node["country"] = encode_node["country"]
             node["sl"] = encode_node["sl"]
             node["ip"] = encode_node["ip"]
+            if self.with_rules:
+                node["ruels"] = encode_node["rules"]
         self.logger.print(f"[+] Done encoding nodes\n")
     
     def build_graph(self):
@@ -318,6 +325,8 @@ class CustomDataset():
         self.graph.ndata["country"] = torch.tensor([node["country"] for node in self.nodes])
         self.graph.ndata["sl"] = torch.tensor([node["sl"] for node in self.nodes])
         self.graph.ndata["ip"] = torch.tensor([node["ip"] for node in self.nodes])
+        if self.with_rules:
+            self.graph.ndata["rules"] = torch.tensor([node["rules"] for node in self.nodes])
         
         sim_etype = ("site", "sim", "site")
         num_sim_edges = self.graph.num_edges(etype=sim_etype)
@@ -456,8 +465,11 @@ class CustomDataset():
         nfeat_co = graph.ndata.pop('country')
         nfeat_sl = graph.ndata.pop('sl')
         nfeat_ip = graph.ndata.pop('ip')
-        
-        return nfeat_s, nfeat_sm, nfeat_c, nfeat_co, nfeat_sl, nfeat_ip
+        if self.with_rules:
+            nfeat_r = graph.ndata.pop("rules")
+            return nfeat_s, nfeat_sm, nfeat_c, nfeat_co, nfeat_sl, nfeat_ip, nfeat_r
+        else:
+            return nfeat_s, nfeat_sm, nfeat_c, nfeat_co, nfeat_sl, nfeat_ip
     
     
     def compute_node_edge_correlations(self):
@@ -474,6 +486,30 @@ class CustomDataset():
             self.logger.print(f"[+] MI({feat_name} → edge) = {mi[0]:.4f}")
             
             
+    def set_site_rule(self):
+        self.logger.print(f"[*] Setting site rule")
+        with open(os.path.join(self.dataset_path, "graph", "sites_rules.json"), "r") as f:
+            rules_all_node_by_file = json.load(f)
+        
+        for node in self.nodes:
+            rules = []
+            if node["site"] not in rules_all_node_by_file:
+                for _ in range(9):
+                    rules.append(0)
+            else:
+                rules_by_file = rules_all_node_by_file[node["site"]]
+                for i in range(9):
+                    if f"rule {i}" in rules_by_file:
+                        rules.append(rules_by_file[f"rule {i}"])
+                    else:
+                        rules.append(0)
+            node["rules"] = rules
+            
+        with open(os.path.join(self.dataset_path, "graph", "nodes_with_rules.json"), "w", encoding="utf-8") as f:
+            json.dump(self.nodes, f, indent=4, ensure_ascii=False)
+        self.logger.print(f"[+] Saved node data\n")
+        
+        
             
 if __name__ == "__main__":
     pass

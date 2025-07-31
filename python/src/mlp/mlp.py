@@ -10,6 +10,7 @@ class MLP(nn.Module):
         self.emb_dim = args.embed_size
         self.n_hidden = args.hidden_size
         self.feature = args.feature
+        self.with_rules = args.feature == "with_reuls"
         self.dropout = nn.Dropout(args.dropout)
         self.relu = nn.LeakyReLU(args.relu)
 
@@ -17,24 +18,17 @@ class MLP(nn.Module):
         self.embed_country = nn.Embedding(92, self.emb_dim)
         self.embed_sl = nn.Embedding(6, self.emb_dim)
         self.embed_url = nn.Embedding(128, self.emb_dim)
+        if self.with_rules:
+            self.embed_rules = nn.Linear(9, self.emb_dim)
 
         self.lstm = nn.LSTM(self.emb_dim, self.emb_dim, batch_first=True, bidirectional=True)
         self.fc_lstm = nn.Linear(self.emb_dim * 2, self.emb_dim)
 
-        if self.feature == "all":
-            mlp_input_dim = self.emb_dim * 4 + 32
-        elif self.feature == "site":
-            mlp_input_dim = self.emb_dim
-        elif self.feature == "category":
-            mlp_input_dim = self.emb_dim
-        elif self.feature == "country":
-            mlp_input_dim = self.emb_dim
-        elif self.feature == "sl":
-            mlp_input_dim = self.emb_dim
-        elif self.feature == "ip":
-            mlp_input_dim = 32
+        input_dim = self.emb_dim * 4 + 32
+        if self.with_rules:
+            input_dim += self.emb_dim
         self.mlp = nn.Sequential(
-            nn.Linear(mlp_input_dim*2, self.n_hidden),
+            nn.Linear(input_dim*2, self.n_hidden),
             nn.LeakyReLU(args.relu),
             # nn.Dropout(args.dropout),
             nn.Linear(self.n_hidden, self.n_hidden),
@@ -55,7 +49,11 @@ class MLP(nn.Module):
         return {'score': score, 'attn': attn}
     
     
-    def forward(self, edge_sub, blocks, inputs_s, inputs_sm, inputs_c, inputs_co, inputs_sl, inputs_ip):
+    def forward(self, edge_sub, blocks, batch_inputs):
+        if self.with_rules:
+            inputs_s, inputs_sm, inputs_c, inputs_co, inputs_sl, inputs_ip, inputs_r = batch_inputs
+        else:
+            inputs_s, inputs_sm, inputs_c, inputs_co, inputs_sl, inputs_ip = batch_inputs
         lengths = inputs_sm.sum(dim=1)
         url_emb = self.embed_url(inputs_s)
         packed = pack_padded_sequence(url_emb, lengths.cpu(), batch_first=True, enforce_sorted=False)
@@ -69,19 +67,12 @@ class MLP(nn.Module):
         country_emb = self.embed_country(inputs_co).squeeze(1)
         sec_emb = self.embed_sl(inputs_sl).squeeze(1)
         ip_emb = inputs_ip.float()
-
-        if self.feature == "all":
+        if self.with_rules:
+            rules_emb = self.embed_rules(inputs_r.float())
+            node_feat = torch.cat([h, cat_emb, country_emb, sec_emb, ip_emb, rules_emb], dim=1)
+        else:
             node_feat = torch.cat([h, cat_emb, country_emb, sec_emb, ip_emb], dim=1)
-        elif self.feature == "site":
-            node_feat = h
-        elif self.feature == "category":
-            node_feat = cat_emb
-        elif self.feature == "country":
-            node_feat = country_emb
-        elif self.feature == "sl":
-            node_feat = sec_emb
-        elif self.feature == "ip":
-            node_feat = ip_emb
+
         src, dst = edge_sub.edges(etype='sim',order='eid')
         edge_feat = torch.cat([node_feat[src], node_feat[dst]], dim=1)
 
