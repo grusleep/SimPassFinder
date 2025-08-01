@@ -10,7 +10,7 @@ class MLP(nn.Module):
         self.emb_dim = args.embed_size
         self.n_hidden = args.hidden_size
         self.feature = args.feature
-        self.with_rules = args.feature == "with_reuls"
+        self.with_rules = args.feature == "with_rules"
         self.dropout = nn.Dropout(args.dropout)
         self.relu = nn.LeakyReLU(args.relu)
 

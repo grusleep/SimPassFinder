@@ -72,7 +72,10 @@ class GCN(nn.Module):
         if self.with_rules:
             h_rules = self.embed_rules(inputs_r.float())
 
-        h = torch.cat([h_url, h_cat, h_country, h_sec, h_ip, h_rules], dim=1)
+        if self.with_rules:
+            h = torch.cat([h_url, h_cat, h_country, h_sec, h_ip, h_rules], dim=1)
+        else:
+            h = torch.cat([h_url, h_cat, h_country, h_sec, h_ip], dim=1)
 
         # 2. GNN propagation using HeteroGraphConv
         h_dict = {'site': h}

@@ -102,7 +102,8 @@ class GraphSAGE(nn.Module):
         h3 = vec_country
         h4 = vec_sl
         h5 = vec_ip
-        h6 = vec_rules
+        if self.with_rules:
+            h6 = vec_rules
     
         for i in range(self.num_layers):
             h1 = self.conv_s[i](blocks[i], h1)
@@ -129,12 +130,16 @@ class GraphSAGE(nn.Module):
             h5 = self.relu(h5)
             h5 = self.dropout(h5)
             
-        for i in range(self.num_layers):
-            h6 = self.conv_r[i](blocks[i], h6)
-            h6 = self.relu(h6)
-            h6 = self.dropout(h6)
-            
-        h_stack = torch.stack([h1, h2, h3, h4, h5, h6], dim=1)
+        if self.with_rules:
+            for i in range(self.num_layers):
+                h6 = self.conv_r[i](blocks[i], h6)
+                h6 = self.relu(h6)
+                h6 = self.dropout(h6)
+        
+        if self.with_rules:
+            h_stack = torch.stack([h1, h2, h3, h4, h5, h6], dim=1)
+        else:
+             h_stack = torch.stack([h1, h2, h3, h4, h5], dim=1)
         attn = self.softmax(self.attn(self.attn_linear(h_stack)))
         h = torch.sum((self.attn_linear(h_stack) * attn), dim=1)
         
