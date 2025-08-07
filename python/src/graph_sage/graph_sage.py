@@ -46,8 +46,9 @@ class GraphSAGE(nn.Module):
                                     [SAGEConvN(self.n_hidden, self.n_hidden, aggregator_type=self.agg_type) for i in range(self.num_layers - 1)])
         self.conv_ip = nn.ModuleList([SAGEConvN(32, self.n_hidden, aggregator_type=self.agg_type)] + 
                                     [SAGEConvN(self.n_hidden, self.n_hidden, aggregator_type=self.agg_type) for i in range(self.num_layers - 1)])
-        self.conv_r = nn.ModuleList([SAGEConvN(self.emb_dim, self.n_hidden, aggregator_type=self.agg_type)] + 
-                                    [SAGEConvN(self.n_hidden, self.n_hidden, aggregator_type=self.agg_type) for i in range(self.num_layers - 1)])
+        if self.with_rules:
+            self.conv_r = nn.ModuleList([SAGEConvN(self.emb_dim, self.n_hidden, aggregator_type=self.agg_type)] + 
+                                        [SAGEConvN(self.n_hidden, self.n_hidden, aggregator_type=self.agg_type) for i in range(self.num_layers - 1)])
         
         # self.conv = nn.ModuleList([SAGEConvN(self.emb_dim*4+32, self.n_hidden, aggregator_type=self.agg_type)] + 
         #                             [SAGEConvN(self.n_hidden, self.n_hidden, aggregator_type=self.agg_type) for i in range(self.num_layers - 1)])

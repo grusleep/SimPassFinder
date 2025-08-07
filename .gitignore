@@ -14,3 +14,5 @@ test.py
 !CMakeLists.txt
 !requirements.txt
 *.log
+
+main_test.py

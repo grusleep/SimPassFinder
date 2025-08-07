@@ -33,7 +33,7 @@ def save_checkpoint(path, model, optimizer, valid_result):
 def load_checkpoint(path, model, optimizer):
     if path == None:
         return
-    checkpoint = torch.load(path, weights_only=True)
+    checkpoint = torch.load(path, weights_only=True, map_location=torch.device('cpu'))
     model.load_state_dict(checkpoint['model_state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
     return checkpoint['valid_result']
