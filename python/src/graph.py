@@ -486,25 +486,42 @@ class CustomDataset():
             self.logger.print(f"[+] MI({feat_name} → edge) = {mi[0]:.4f}")
             
             
+    # def set_site_rule(self):
+    #     self.logger.print(f"[*] Setting site rule")
+    #     with open(os.path.join(self.dataset_path, "graph", "sites_rules.json"), "r") as f:
+    #         rules_all_node_by_file = json.load(f)
+        
+    #     for node in self.nodes:
+    #         rules = []
+    #         if node["site"] not in rules_all_node_by_file:
+    #             for _ in range(9):
+    #                 rules.append(0)
+    #         else:
+    #             rules_by_file = rules_all_node_by_file[node["site"]]
+    #             for i in range(9):
+    #                 if f"rule {i}" in rules_by_file:
+    #                     rules.append(rules_by_file[f"rule {i}"])
+    #                 else:
+    #                     rules.append(0)
+    #         node["rules"] = rules
+            
+    #     with open(os.path.join(self.dataset_path, "graph", "nodes_with_rules.json"), "w", encoding="utf-8") as f:
+    #         json.dump(self.nodes, f, indent=4, ensure_ascii=False)
+    #     self.logger.print(f"[+] Saved node data\n")
+    
     def set_site_rule(self):
         self.logger.print(f"[*] Setting site rule")
         with open(os.path.join(self.dataset_path, "graph", "sites_rules.json"), "r") as f:
             rules_all_node_by_file = json.load(f)
         
         for node in self.nodes:
-            rules = []
-            if node["site"] not in rules_all_node_by_file:
-                for _ in range(9):
-                    rules.append(0)
+            if node["site"] in rules_all_node_by_file:
+                max_rule = max(rules_all_node_by_file[node["site"]], key=rules_all_node_by_file[node["site"]].get)
+                rule_num = int(max_rule.split(" ")[1])
+                node["rule"] = rule_num
             else:
-                rules_by_file = rules_all_node_by_file[node["site"]]
-                for i in range(9):
-                    if f"rule {i}" in rules_by_file:
-                        rules.append(rules_by_file[f"rule {i}"])
-                    else:
-                        rules.append(0)
-            node["rules"] = rules
-            
+                node["rule"] = 0
+
         with open(os.path.join(self.dataset_path, "graph", "nodes_with_rules.json"), "w", encoding="utf-8") as f:
             json.dump(self.nodes, f, indent=4, ensure_ascii=False)
         self.logger.print(f"[+] Saved node data\n")
