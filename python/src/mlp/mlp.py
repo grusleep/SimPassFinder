@@ -19,7 +19,7 @@ class MLP(nn.Module):
         self.embed_sl = nn.Embedding(6, self.emb_dim)
         self.embed_url = nn.Embedding(128, self.emb_dim)
         if self.with_rules:
-            self.embed_rules = nn.Linear(9, self.emb_dim)
+            self.embed_rules = nn.Embedding(9, self.emb_dim)
 
         self.lstm = nn.LSTM(self.emb_dim, self.emb_dim, batch_first=True, bidirectional=True)
         self.fc_lstm = nn.Linear(self.emb_dim * 2, self.emb_dim)
@@ -68,7 +68,7 @@ class MLP(nn.Module):
         sec_emb = self.embed_sl(inputs_sl).squeeze(1)
         ip_emb = inputs_ip.float()
         if self.with_rules:
-            rules_emb = self.embed_rules(inputs_r.float())
+            rules_emb = self.embed_rules(inputs_r.long())
             node_feat = torch.cat([h, cat_emb, country_emb, sec_emb, ip_emb, rules_emb], dim=1)
         else:
             node_feat = torch.cat([h, cat_emb, country_emb, sec_emb, ip_emb], dim=1)

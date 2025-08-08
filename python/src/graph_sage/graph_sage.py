@@ -26,7 +26,7 @@ class GraphSAGE(nn.Module):
         self.embed_country = nn.Embedding(92, self.emb_dim)
         self.embed_sl = nn.Embedding(6, self.emb_dim)
         if self.with_rules:
-            self.embed_rules = nn.Linear(9, self.emb_dim)
+            self.embed_rules = nn.Embedding(9, self.emb_dim)
         
         self.embed_url = nn.Embedding(128, self.emb_dim)
         self.lstm = nn.LSTM(self.emb_dim, self.emb_dim, batch_first=True, bidirectional=True)
@@ -83,7 +83,7 @@ class GraphSAGE(nn.Module):
         vec_sl = self.embed_sl(inputs_sl)
         vec_ip = inputs_ip
         if self.with_rules:
-            vec_rules = self.embed_rules(inputs_r.float())
+            vec_rules = self.embed_rules(inputs_r.long())
         
         url_input = inputs_s
         url_mask = inputs_sm

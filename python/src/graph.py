@@ -263,7 +263,7 @@ class CustomDataset():
                             for byte in bit_strs
                             for bit in byte]
         if self.with_rules:
-            encode_node["rules"] = node["rules"]
+            encode_node["rule"] = node["rule"]
 
         return encode_node
     
@@ -278,7 +278,7 @@ class CustomDataset():
             node["sl"] = encode_node["sl"]
             node["ip"] = encode_node["ip"]
             if self.with_rules:
-                node["ruels"] = encode_node["rules"]
+                node["rule"] = encode_node["rule"]
         self.logger.print(f"[+] Done encoding nodes\n")
     
     def build_graph(self):
@@ -326,7 +326,7 @@ class CustomDataset():
         self.graph.ndata["sl"] = torch.tensor([node["sl"] for node in self.nodes])
         self.graph.ndata["ip"] = torch.tensor([node["ip"] for node in self.nodes])
         if self.with_rules:
-            self.graph.ndata["rules"] = torch.tensor([node["rules"] for node in self.nodes])
+            self.graph.ndata["rule"] = torch.tensor([node["rule"] for node in self.nodes])
         
         sim_etype = ("site", "sim", "site")
         num_sim_edges = self.graph.num_edges(etype=sim_etype)
@@ -466,7 +466,7 @@ class CustomDataset():
         nfeat_sl = graph.ndata.pop('sl')
         nfeat_ip = graph.ndata.pop('ip')
         if self.with_rules:
-            nfeat_r = graph.ndata.pop("rules")
+            nfeat_r = graph.ndata.pop("rule")
             return nfeat_s, nfeat_sm, nfeat_c, nfeat_co, nfeat_sl, nfeat_ip, nfeat_r
         else:
             return nfeat_s, nfeat_sm, nfeat_c, nfeat_co, nfeat_sl, nfeat_ip

@@ -20,7 +20,7 @@ class GCN(nn.Module):
         self.embed_sl = nn.Embedding(6, self.emb_dim)
         self.embed_url = nn.Embedding(128, self.emb_dim)
         if self.with_rules:
-            self.embed_rules = nn.Linear(9, self.emb_dim)
+            self.embed_rules = nn.Embedding(9, self.emb_dim)
 
         self.lstm = nn.LSTM(self.emb_dim, self.emb_dim, batch_first=True, bidirectional=True)
         self.fc_lstm = nn.Linear(self.emb_dim * 2, self.emb_dim)
@@ -70,7 +70,7 @@ class GCN(nn.Module):
         h_sec = self.embed_sl(inputs_sl).squeeze(1)
         h_ip = inputs_ip.float()
         if self.with_rules:
-            h_rules = self.embed_rules(inputs_r.float())
+            h_rules = self.embed_rules(inputs_r.long())
 
         if self.with_rules:
             h = torch.cat([h_url, h_cat, h_country, h_sec, h_ip, h_rules], dim=1)
