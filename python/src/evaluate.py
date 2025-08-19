@@ -5,19 +5,18 @@ from collections import defaultdict
 from sklearn.metrics import precision_score, recall_score, f1_score, classification_report
 
 def load_subtensor(nfeat: list, edge_sub, input_nodes, device='cpu'):
-    with_rules = len(nfeat) == 7
+    with_rules = len(nfeat) == 6
     if with_rules:
-        nfeat_s, nfeat_sm, nfeat_c, nfeat_co, nfeat_sl, nfeat_ip, nfeat_r = nfeat
+        nfeat_s, nfeat_sm, nfeat_c, nfeat_co, nfeat_sl, nfeat_r = nfeat
         nfeat_r = nfeat_r.to(device)
     else:
-        nfeat_s, nfeat_sm, nfeat_c, nfeat_co, nfeat_sl, nfeat_ip = nfeat
+        nfeat_s, nfeat_sm, nfeat_c, nfeat_co, nfeat_sl = nfeat
         
     nfeat_s = nfeat_s.to(device)
     nfeat_sm = nfeat_sm.to(device)
     nfeat_c = nfeat_c.to(device)
     nfeat_co = nfeat_co.to(device)
     nfeat_sl = nfeat_sl.to(device)
-    nfeat_ip = nfeat_ip.to(device)
     input_nodes = input_nodes.to(device)
     
     
@@ -26,12 +25,11 @@ def load_subtensor(nfeat: list, edge_sub, input_nodes, device='cpu'):
     batch_inputs_c = nfeat_c[input_nodes].to(device)
     batch_inputs_co = nfeat_co[input_nodes].to(device)
     batch_inputs_sl = nfeat_sl[input_nodes].to(device)
-    batch_inputs_ip = nfeat_ip[input_nodes].to(device)
     if with_rules:
         batch_inputs_r = nfeat_r[input_nodes].to(device)
-        batch_inputs = (batch_inputs_s, batch_inputs_sm, batch_inputs_c, batch_inputs_co, batch_inputs_sl, batch_inputs_ip, batch_inputs_r)
+        batch_inputs = (batch_inputs_s, batch_inputs_sm, batch_inputs_c, batch_inputs_co, batch_inputs_sl, batch_inputs_r)
     else:
-        batch_inputs = (batch_inputs_s, batch_inputs_sm, batch_inputs_c, batch_inputs_co, batch_inputs_sl, batch_inputs_ip)
+        batch_inputs = (batch_inputs_s, batch_inputs_sm, batch_inputs_c, batch_inputs_co, batch_inputs_sl)
     edge_sub = edge_sub.to(device)
     batch_labels = edge_sub.edata['label'][('site', 'sim', 'site')]
     
