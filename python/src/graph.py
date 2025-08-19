@@ -92,7 +92,7 @@ class CustomDataset():
         countries = set()
         categories = set()
         self.logger.print(f"[*] Start Setting nodes")
-        required_keys = {'category', 'country', 'sl', 'ip'}
+        required_keys = {'category', 'country', 'sl'}
         
         for site in list(self.meta_data.keys()):
             if not required_keys.issubset(self.meta_data[site]): 
@@ -102,7 +102,6 @@ class CustomDataset():
             node["category"] = self.meta_data[site]["category"]
             node["country"] = self.meta_data[site]["country"]
             node["sl"] = self.meta_data[site]["sl"]
-            node["ip"] = self.meta_data[site]["ip"]
             self.nodes.append(node)
             countries.add(node["country"])
             categories.add(node["category"])
@@ -258,10 +257,6 @@ class CustomDataset():
         encode_node["category"] = self.categories.index(node["category"])
         encode_node["country"] = self.countries.index(node["country"])
         encode_node["sl"] = node["sl"]
-        bit_strs = [f"{int(octet):08b}" for octet in node["ip"].split(".")]
-        encode_node["ip"] = [float(bit)
-                            for byte in bit_strs
-                            for bit in byte]
         if self.with_rules:
             encode_node["rule"] = node["rule"]
 
@@ -276,7 +271,6 @@ class CustomDataset():
             node["category"] = encode_node["category"]
             node["country"] = encode_node["country"]
             node["sl"] = encode_node["sl"]
-            node["ip"] = encode_node["ip"]
             if self.with_rules:
                 node["rule"] = encode_node["rule"]
         self.logger.print(f"[+] Done encoding nodes\n")
@@ -324,7 +318,6 @@ class CustomDataset():
         self.graph.ndata["category"] = torch.tensor([node["category"] for node in self.nodes])
         self.graph.ndata["country"] = torch.tensor([node["country"] for node in self.nodes])
         self.graph.ndata["sl"] = torch.tensor([node["sl"] for node in self.nodes])
-        self.graph.ndata["ip"] = torch.tensor([node["ip"] for node in self.nodes])
         if self.with_rules:
             self.graph.ndata["rule"] = torch.tensor([node["rule"] for node in self.nodes])
         
@@ -464,12 +457,11 @@ class CustomDataset():
         nfeat_c = graph.ndata.pop('category')
         nfeat_co = graph.ndata.pop('country')
         nfeat_sl = graph.ndata.pop('sl')
-        nfeat_ip = graph.ndata.pop('ip')
         if self.with_rules:
             nfeat_r = graph.ndata.pop("rule")
-            return nfeat_s, nfeat_sm, nfeat_c, nfeat_co, nfeat_sl, nfeat_ip, nfeat_r
+            return nfeat_s, nfeat_sm, nfeat_c, nfeat_co, nfeat_sl, nfeat_r
         else:
-            return nfeat_s, nfeat_sm, nfeat_c, nfeat_co, nfeat_sl, nfeat_ip
+            return nfeat_s, nfeat_sm, nfeat_c, nfeat_co, nfeat_sl
     
     
     def compute_node_edge_correlations(self):

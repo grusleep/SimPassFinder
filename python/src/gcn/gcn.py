@@ -51,10 +51,10 @@ class GCN(nn.Module):
 
     def forward(self, edge_sub, blocks, batch_inputs):
         if self.with_rules:
-            inputs_s, inputs_sm, inputs_c, inputs_co, inputs_sl, inputs_ip, inputs_r = batch_inputs
+            inputs_s, inputs_sm, inputs_c, inputs_co, inputs_sl, inputs_r = batch_inputs
         else:
-            inputs_s, inputs_sm, inputs_c, inputs_co, inputs_sl, inputs_ip = batch_inputs
-            
+            inputs_s, inputs_sm, inputs_c, inputs_co, inputs_sl = batch_inputs
+
         # 1. Node feature construction
         lengths = inputs_sm.sum(dim=1)
         url_emb = self.embed_url(inputs_s)
@@ -68,14 +68,13 @@ class GCN(nn.Module):
         h_cat = self.embed_category(inputs_c).squeeze(1)
         h_country = self.embed_country(inputs_co).squeeze(1)
         h_sec = self.embed_sl(inputs_sl).squeeze(1)
-        h_ip = inputs_ip.float()
         if self.with_rules:
             h_rules = self.embed_rules(inputs_r.long())
 
         if self.with_rules:
-            h = torch.cat([h_url, h_cat, h_country, h_sec, h_ip, h_rules], dim=1)
+            h = torch.cat([h_url, h_cat, h_country, h_sec, h_rules], dim=1)
         else:
-            h = torch.cat([h_url, h_cat, h_country, h_sec, h_ip], dim=1)
+            h = torch.cat([h_url, h_cat, h_country, h_sec], dim=1)
 
         # 2. GNN propagation using HeteroGraphConv
         h_dict = {'site': h}

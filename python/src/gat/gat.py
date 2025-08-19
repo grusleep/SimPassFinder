@@ -52,9 +52,9 @@ class GAT(nn.Module):
     
     def forward(self, edge_sub, blocks, batch_inputs):
         if self.with_rules:
-            inputs_s, inputs_sm, inputs_c, inputs_co, inputs_sl, inputs_ip, inputs_r = batch_inputs
+            inputs_s, inputs_sm, inputs_c, inputs_co, inputs_sl, inputs_r = batch_inputs
         else:
-            inputs_s, inputs_sm, inputs_c, inputs_co, inputs_sl, inputs_ip = batch_inputs
+            inputs_s, inputs_sm, inputs_c, inputs_co, inputs_sl = batch_inputs
         lengths = inputs_sm.sum(dim=1)
         url_emb = self.embed_url(inputs_s)
         packed = pack_padded_sequence(url_emb, lengths.cpu(), batch_first=True, enforce_sorted=False)
@@ -67,13 +67,12 @@ class GAT(nn.Module):
         cat_emb = self.embed_category(inputs_c).squeeze(1)
         country_emb = self.embed_country(inputs_co).squeeze(1)
         sec_emb = self.embed_sl(inputs_sl).squeeze(1)
-        ip_emb = inputs_ip.float()
         if self.with_rules:
             rules_emb = self.embed_rules(inputs_r.long())
-            h = torch.cat([h, cat_emb, country_emb, sec_emb, ip_emb, rules_emb], dim=1)
+            h = torch.cat([h, cat_emb, country_emb, sec_emb, rules_emb], dim=1)
         else:
-            h = torch.cat([h, cat_emb, country_emb, sec_emb, ip_emb], dim=1)
-        
+            h = torch.cat([h, cat_emb, country_emb, sec_emb], dim=1)
+
         attn = None
         for i, layer in enumerate(self.gat_layers):
             edge_type = ("site", "sim", "site")
