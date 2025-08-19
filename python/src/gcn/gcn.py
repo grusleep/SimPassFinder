@@ -25,7 +25,7 @@ class GCN(nn.Module):
         self.lstm = nn.LSTM(self.emb_dim, self.emb_dim, batch_first=True, bidirectional=True)
         self.fc_lstm = nn.Linear(self.emb_dim * 2, self.emb_dim)
 
-        self.input_dim = self.emb_dim * 4 + 32  # +4 for float IP
+        self.input_dim = self.emb_dim * 4  # +4 for float IP
         if self.with_rules:
             self.input_dim += self.emb_dim
 
