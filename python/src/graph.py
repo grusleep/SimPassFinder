@@ -258,7 +258,7 @@ class CustomDataset():
         encode_node["country"] = self.countries.index(node["country"])
         encode_node["sl"] = node["sl"]
         if self.with_rules:
-            encode_node["rule"] = node["rule"]
+            encode_node["rules"] = node["rules"]
 
         return encode_node
     
@@ -272,7 +272,7 @@ class CustomDataset():
             node["country"] = encode_node["country"]
             node["sl"] = encode_node["sl"]
             if self.with_rules:
-                node["rule"] = encode_node["rule"]
+                node["rules"] = encode_node["rules"]
         self.logger.print(f"[+] Done encoding nodes\n")
     
     def build_graph(self):
@@ -319,7 +319,7 @@ class CustomDataset():
         self.graph.ndata["country"] = torch.tensor([node["country"] for node in self.nodes])
         self.graph.ndata["sl"] = torch.tensor([node["sl"] for node in self.nodes])
         if self.with_rules:
-            self.graph.ndata["rule"] = torch.tensor([node["rule"] for node in self.nodes])
+            self.graph.ndata["rules"] = torch.tensor([node["rules"] for node in self.nodes])
         
         sim_etype = ("site", "sim", "site")
         num_sim_edges = self.graph.num_edges(etype=sim_etype)
@@ -458,7 +458,7 @@ class CustomDataset():
         nfeat_co = graph.ndata.pop('country')
         nfeat_sl = graph.ndata.pop('sl')
         if self.with_rules:
-            nfeat_r = graph.ndata.pop("rule")
+            nfeat_r = graph.ndata.pop("rules")
             return nfeat_s, nfeat_sm, nfeat_c, nfeat_co, nfeat_sl, nfeat_r
         else:
             return nfeat_s, nfeat_sm, nfeat_c, nfeat_co, nfeat_sl
@@ -478,45 +478,45 @@ class CustomDataset():
             self.logger.print(f"[+] MI({feat_name} → edge) = {mi[0]:.4f}")
             
             
-    # def set_site_rule(self):
-    #     self.logger.print(f"[*] Setting site rule")
-    #     with open(os.path.join(self.dataset_path, "graph", "sites_rules.json"), "r") as f:
-    #         rules_all_node_by_file = json.load(f)
-        
-    #     for node in self.nodes:
-    #         rules = []
-    #         if node["site"] not in rules_all_node_by_file:
-    #             for _ in range(9):
-    #                 rules.append(0)
-    #         else:
-    #             rules_by_file = rules_all_node_by_file[node["site"]]
-    #             for i in range(9):
-    #                 if f"rule {i}" in rules_by_file:
-    #                     rules.append(rules_by_file[f"rule {i}"])
-    #                 else:
-    #                     rules.append(0)
-    #         node["rules"] = rules
-            
-    #     with open(os.path.join(self.dataset_path, "graph", "nodes_with_rules.json"), "w", encoding="utf-8") as f:
-    #         json.dump(self.nodes, f, indent=4, ensure_ascii=False)
-    #     self.logger.print(f"[+] Saved node data\n")
-    
     def set_site_rule(self):
         self.logger.print(f"[*] Setting site rule")
         with open(os.path.join(self.dataset_path, "graph", "sites_rules.json"), "r") as f:
             rules_all_node_by_file = json.load(f)
         
         for node in self.nodes:
-            if node["site"] in rules_all_node_by_file:
-                max_rule = max(rules_all_node_by_file[node["site"]], key=rules_all_node_by_file[node["site"]].get)
-                rule_num = int(max_rule.split(" ")[1])
-                node["rule"] = rule_num
+            rules = []
+            if node["site"] not in rules_all_node_by_file:
+                for _ in range(9):
+                    rules.append(0)
             else:
-                node["rule"] = 0
-
+                rules_by_file = rules_all_node_by_file[node["site"]]
+                for i in range(9):
+                    if f"rule {i}" in rules_by_file:
+                        rules.append(rules_by_file[f"rule {i}"])
+                    else:
+                        rules.append(0)
+            node["rules"] = rules
+            
         with open(os.path.join(self.dataset_path, "graph", "nodes_with_rules.json"), "w", encoding="utf-8") as f:
             json.dump(self.nodes, f, indent=4, ensure_ascii=False)
         self.logger.print(f"[+] Saved node data\n")
+    
+    # def set_site_rule(self):
+    #     self.logger.print(f"[*] Setting site rule")
+    #     with open(os.path.join(self.dataset_path, "graph", "sites_rules.json"), "r") as f:
+    #         rules_all_node_by_file = json.load(f)
+        
+    #     for node in self.nodes:
+    #         if node["site"] in rules_all_node_by_file:
+    #             max_rule = max(rules_all_node_by_file[node["site"]], key=rules_all_node_by_file[node["site"]].get)
+    #             rule_num = int(max_rule.split(" ")[1])
+    #             node["rule"] = rule_num
+    #         else:
+    #             node["rule"] = 0
+
+    #     with open(os.path.join(self.dataset_path, "graph", "nodes_with_rules.json"), "w", encoding="utf-8") as f:
+    #         json.dump(self.nodes, f, indent=4, ensure_ascii=False)
+    #     self.logger.print(f"[+] Saved node data\n")
         
         
             

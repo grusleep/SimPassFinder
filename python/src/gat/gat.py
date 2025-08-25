@@ -21,7 +21,7 @@ class GAT(nn.Module):
         self.embed_sl = nn.Embedding(6, self.emb_dim)
         self.embed_url = nn.Embedding(128, self.emb_dim)
         if self.with_rules:
-            self.embed_rules = nn.Embedding(9, self.emb_dim)
+            self.embed_rules = nn.Linear(9, self.emb_dim)
 
         self.lstm = nn.LSTM(self.emb_dim, self.emb_dim, batch_first=True, bidirectional=True)
         self.fc_lstm = nn.Linear(self.emb_dim * 2, self.emb_dim)
@@ -68,7 +68,7 @@ class GAT(nn.Module):
         country_emb = self.embed_country(inputs_co).squeeze(1)
         sec_emb = self.embed_sl(inputs_sl).squeeze(1)
         if self.with_rules:
-            rules_emb = self.embed_rules(inputs_r.long())
+            rules_emb = self.embed_rules(inputs_r.float())
             h = torch.cat([h, cat_emb, country_emb, sec_emb, rules_emb], dim=1)
         else:
             h = torch.cat([h, cat_emb, country_emb, sec_emb], dim=1)
